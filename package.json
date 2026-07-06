@@ -1,11 +1,29 @@
 {
-  "name": "open-minion",
+  "name": "@shigurenimo/minion",
   "version": "0.1.0",
-  "private": true,
+  "description": "Desktop pet that reacts to your Claude Code session activity",
+  "keywords": [
+    "claude-code",
+    "cli",
+    "desktop-pet",
+    "macos"
+  ],
+  "license": "MIT",
+  "author": "shigurenimo",
   "bin": {
     "minion": "cli/src/index.ts"
   },
+  "files": [
+    "cli/src",
+    "swift",
+    "tsconfig.json",
+    "!cli/src/**/*.test.ts",
+    "!swift/.build"
+  ],
   "type": "module",
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "check": "vp check",
     "fmt": "vp fmt",
@@ -23,5 +41,8 @@
     "@voidzero-dev/vite-plus-core": "^0.2.2",
     "typescript": "^6.0.3",
     "vite-plus": "^0.2.2"
+  },
+  "engines": {
+    "bun": ">=1.0.0"
   }
 }
