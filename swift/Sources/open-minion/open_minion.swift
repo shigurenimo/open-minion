@@ -359,6 +359,7 @@ final class Pet {
         }
 
         // セッションが idle の間は、その場でうずくまって寝る(掴む/なでるはできる)。
+        // ただし待機クリップ自体のコマ送りは止めない。止めると単なる1枚絵で固まって見える。
         let sleeping = !sessionRunning
         if !sleeping {
             if feedTicksRemaining > 0 {
@@ -368,8 +369,8 @@ final class Pet {
                 }
             }
             stepBehavior()
-            advanceAnimationFrame()
         }
+        advanceAnimationFrame()
 
         petView.isAsleep = sleeping
         petView.facingLeft = facingLeft
