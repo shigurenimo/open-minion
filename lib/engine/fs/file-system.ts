@@ -1,3 +1,7 @@
+export type MinionFileStat = {
+  mtimeMs: number
+}
+
 /**
  * Filesystem boundary used everywhere minion reads or writes.
  * Default is NodeMinionFileSystem (real `node:fs`); MemoryMinionFileSystem
@@ -18,4 +22,6 @@ export abstract class MinionFileSystem {
    * Used for the start-lock / pid-file singleton guard.
    */
   abstract createExclusiveSync(path: string): boolean
+  /** Used to detect whether a file changed since it was last scanned (e.g. transcript token-usage scanning). */
+  abstract statSync(path: string): MinionFileStat
 }

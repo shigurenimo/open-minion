@@ -4,6 +4,7 @@ import configGet from "@/routes/config/get/[key]/route"
 import configList from "@/routes/config/list/route"
 import configSet from "@/routes/config/set/[key]/[value]/route"
 import dev from "@/routes/dev/route"
+import dex from "@/routes/dex/route"
 import kill from "@/routes/kill/route"
 import { notFound } from "@/routes/not-found"
 import reboot from "@/routes/reboot/route"
@@ -17,6 +18,7 @@ base.notFound(notFound)
 export const app = base
   .post("/start", ...start)
   .post("/dev", ...dev)
+  .post("/dex", ...dex)
   .post("/kill", ...kill)
   .post("/reboot", ...reboot)
   .post("/status", ...status)

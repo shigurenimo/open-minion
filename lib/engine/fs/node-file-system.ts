@@ -6,9 +6,10 @@ import {
   readdirSync,
   readFileSync,
   rmSync,
+  statSync,
   writeFileSync,
 } from "node:fs"
-import { MinionFileSystem } from "@lib/engine/fs/file-system"
+import { type MinionFileStat, MinionFileSystem } from "@lib/engine/fs/file-system"
 
 export class NodeMinionFileSystem extends MinionFileSystem {
   existsSync(path: string): boolean {
@@ -46,5 +47,9 @@ export class NodeMinionFileSystem extends MinionFileSystem {
     } catch {
       return false
     }
+  }
+
+  statSync(path: string): MinionFileStat {
+    return { mtimeMs: statSync(path).mtimeMs }
   }
 }

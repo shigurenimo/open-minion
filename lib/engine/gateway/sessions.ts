@@ -8,6 +8,8 @@ const DEFAULT_STALE_MS = 8 * 60 * 1000
 export type SessionInfo = {
   running: boolean
   name: string
+  /** The session's working directory, when Claude Code recorded one — used to count distinct projects worked in. */
+  cwd?: string
 }
 
 type Props = {
@@ -53,6 +55,7 @@ export function readActiveSessions(props: Props): Map<string, SessionInfo> {
       result.set(raw.sessionId, {
         running: alive && raw.status === "busy",
         name: typeof raw.name === "string" ? raw.name : "",
+        cwd: typeof raw.cwd === "string" ? raw.cwd : undefined,
       })
     } catch {
       // 書き込み途中などで壊れているファイルは無視

@@ -21,6 +21,7 @@ Commands:
   kill                      停止する
   reboot                    停止してリリースビルドで起動し直す
   status                    起動状況を表示する
+  dex                       実績とミニオン図鑑を表示する
   config list               設定値を一覧表示する
   config get <key>          設定値を取得する
   config set <key> <value>  設定値を書き込む

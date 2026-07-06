@@ -59,4 +59,34 @@ describe("app routes", () => {
 
     expect(res.status).toBe(404)
   })
+
+  it("shows the current minion plus dex progress via /dex", async () => {
+    const minion = Minion.inMemory()
+
+    const res = await app.request("/dex", postJson({}), { minion })
+    const text = await res.text()
+
+    expect(text).toContain("現在のミニオン:")
+    expect(text).toMatch(/== 実績 \(\d+\/\d+\) ==/)
+    expect(text).toMatch(/== ミニオン図鑑 \(\d+\/\d+\) ==/)
+  })
+
+  it("unlocks first-session on /dex once a session has been seen", async () => {
+    const fs = new MemoryMinionFileSystem({
+      files: {
+        "/sandbox/.claude/sessions/1.json": JSON.stringify({
+          sessionId: "a",
+          pid: 1,
+          status: "busy",
+          updatedAt: 0,
+        }),
+      },
+    })
+    const minion = Minion.inMemory({ fs })
+
+    const res = await app.request("/dex", postJson({}), { minion })
+    const text = await res.text()
+
+    expect(text).toContain("[x] はじめの一歩 — はじめてセッションを実行した。")
+  })
 })

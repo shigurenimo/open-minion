@@ -42,11 +42,52 @@ minion
 | `minion kill`                     | Stop the app and its gateway.                    |
 | `minion reboot`                   | Restart with a release build.                    |
 | `minion status`                   | Show whether the app/gateway are running.        |
+| `minion dex`                      | Show unlocked achievements and the minion dex.   |
 | `minion config list`              | List config values.                              |
 | `minion config get <key>`         | Get a config value.                              |
 | `minion config set <key> <value>` | Set a config value.                              |
 
 Add `-h` to any command for its help text (e.g. `minion start -h`).
+
+### Achievements & the minion dex
+
+`minion dex` scores your Claude Code usage against a catalog of achievements and
+minion species, unlocking whichever ones your stats now satisfy: lifetime and
+concurrent session counts, a day-streak, distinct projects worked in, time of day,
+and token consumption both lifetime and rolling (today / this week, scanned from
+`~/.claude/projects/**/*.jsonl`). Rarer minion species require rarer conditions (5+
+concurrent sessions, a 7-day streak, 10+ distinct projects, 10M+ lifetime tokens,
+coding through late night, ...); the five common species just track time of day.
+Undiscovered species show up as `???` until you earn them.
+
+Both catalogs (`DEFAULT_MINION_SPECIES` / `DEFAULT_ACHIEVEMENTS`) are just the
+defaults — pass your own `species: MinionSpecies[]` / `achievements: Achievement[]`
+to `new Minion({ ... })` to add your own entries, retheme the built-ins, or fill in
+each species'/achievement's `asset` field (an opaque string this library never
+reads — a sprite path, bundle key, whatever your host app's renderer expects) once
+art exists:
+
+```ts
+import { Minion, type MinionSpecies } from "@shigureni/minion"
+
+const mySpecies: MinionSpecies[] = [
+  {
+    id: "day",
+    name: "Sunny Pal",
+    rarity: "common",
+    description: "Appears during the day.",
+    condition: (s) => s.timeBucket === "day",
+    asset: "sprites/sunny-pal.png",
+  },
+  // ...
+]
+
+const minion = new Minion({ species: mySpecies })
+```
+
+`resolveSpecies()` already decides which species is "in effect" at any given
+moment; the Swift side isn't wired up to read `asset` yet, so for now `minion dex`
+is a text-only collection game.
 
 State (pid files, config, and the Swift build output) lives in `~/.minion`,
 independent of wherever the package itself is installed.
@@ -78,8 +119,9 @@ await minion.app.start(false)
 ```
 
 See `lib/index.ts` for the full exported surface (the `Minion` facade, the
-`MinionAppRunner` / `MinionConfigStore` / `MinionGatewayServer` engine classes, and
-the `Node*`/`Memory*` implementation of each IO boundary).
+`MinionAppRunner` / `MinionConfigStore` / `MinionGatewayServer` engine classes, the
+`MinionStatsCollector` / `MinionCollectionTracker` behind `minion dex`, and the
+`Node*`/`Memory*` implementation of each IO boundary).
 
 ## Development
 

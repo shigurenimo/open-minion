@@ -26,13 +26,27 @@ export * from "@lib/engine/config/config-store"
 // Gateway — session watching + pet behavior + the in-process HTTP/WS server
 export * from "@lib/engine/gateway/sessions"
 export * from "@lib/engine/gateway/pet-behavior"
+export * from "@lib/engine/gateway/gateway-routes"
 export * from "@lib/engine/gateway/gateway-server"
 export * from "@lib/engine/gateway/resolve-daemon-script"
+
+// Stats — session/token tracking feeding achievement + minion-species conditions
+export * from "@lib/engine/stats/stats-snapshot"
+export * from "@lib/engine/stats/session-stats-tracker"
+export * from "@lib/engine/stats/token-usage-tracker"
+export * from "@lib/engine/stats/stats-collector"
+
+// Collection — the minion dex: rarity-tiered species + achievements, unlocked over time
+export * from "@lib/engine/collection/species"
+export * from "@lib/engine/collection/achievements"
+export * from "@lib/engine/collection/collection-store"
+export * from "@lib/engine/collection/collection-tracker"
 
 // IO boundaries (abstract + Node / Memory implementations)
 export * from "@lib/engine/fs/file-system"
 export * from "@lib/engine/fs/node-file-system"
 export * from "@lib/engine/fs/memory-file-system"
+export * from "@lib/engine/fs/json-file-store"
 
 export * from "@lib/engine/process/process-runner"
 export * from "@lib/engine/process/node-process-runner"

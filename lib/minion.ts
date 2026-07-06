@@ -15,12 +15,20 @@ import { NodeMinionRandomSource } from "@lib/engine/random/node-random-source"
 import { type MinionPaths, resolveMinionPaths } from "@lib/engine/app/app-paths"
 import { MinionAppRunner } from "@lib/engine/app/app-runner"
 import { MinionConfigStore } from "@lib/engine/config/config-store"
+import type { Achievement } from "@lib/engine/collection/achievements"
+import { MinionCollectionStore } from "@lib/engine/collection/collection-store"
+import { MinionCollectionTracker } from "@lib/engine/collection/collection-tracker"
+import type { MinionSpecies } from "@lib/engine/collection/species"
 import { MinionGatewayServer } from "@lib/engine/gateway/gateway-server"
 import { resolveGatewayDaemonScript } from "@lib/engine/gateway/resolve-daemon-script"
+import { SessionStatsTracker } from "@lib/engine/stats/session-stats-tracker"
+import { TokenUsageTracker } from "@lib/engine/stats/token-usage-tracker"
+import { MinionStatsCollector } from "@lib/engine/stats/stats-collector"
 
 const SANDBOX_PACKAGE_ROOT = "/sandbox/pkg"
 const SANDBOX_DATA_DIR = "/sandbox/.minion"
 const SANDBOX_SESSIONS_DIR = "/sandbox/.claude/sessions"
+const SANDBOX_PROJECTS_DIR = "/sandbox/.claude/projects"
 
 type Props = {
   /** Filesystem boundary. Replace with MemoryMinionFileSystem to sandbox all disk I/O. */
@@ -37,6 +45,12 @@ type Props = {
   dataDir?: string
   /** Directory of Claude Code session files the gateway watches. Defaults to `~/.claude/sessions`. */
   sessionsDir?: string
+  /** Claude Code's transcript root, scanned for token usage. Defaults to `~/.claude/projects`. */
+  projectsDir?: string
+  /** Minion species catalog for `minion.collection`. Defaults to `DEFAULT_MINION_SPECIES` — pass your own to add species, retheme the built-ins, or attach real image `asset` references. */
+  species?: MinionSpecies[]
+  /** Achievement catalog for `minion.collection`. Defaults to `DEFAULT_ACHIEVEMENTS` — pass your own to replace it entirely. */
+  achievements?: Achievement[]
 }
 
 export type MinionGatewayServerOptions = {
@@ -64,6 +78,8 @@ export class Minion {
   readonly paths: MinionPaths
   readonly config: MinionConfigStore
   readonly app: MinionAppRunner
+  readonly stats: MinionStatsCollector
+  readonly collection: MinionCollectionTracker
 
   private readonly fs: MinionFileSystem
   private readonly process: MinionProcessRunner
@@ -77,6 +93,7 @@ export class Minion {
     const processRunner = props.process ?? new NodeMinionProcessRunner()
     const clock = props.clock ?? new NodeMinionClock()
     const random = props.random ?? new NodeMinionRandomSource()
+    const projectsDir = props.projectsDir ?? join(homedir(), ".claude", "projects")
 
     this.fs = fs
     this.process = processRunner
@@ -93,6 +110,21 @@ export class Minion {
       process: processRunner,
       paths: this.paths,
       gatewayCommand: ["bun", resolveGatewayDaemonScript()],
+    })
+
+    this.stats = new MinionStatsCollector({
+      fs,
+      process: processRunner,
+      clock,
+      sessionsDir: this.sessionsDir,
+      sessionStats: new SessionStatsTracker({ fs, path: this.paths.sessionStatsFile }),
+      tokenUsage: new TokenUsageTracker({ fs, path: this.paths.usageScanFile, projectsDir }),
+    })
+
+    this.collection = new MinionCollectionTracker({
+      store: new MinionCollectionStore({ fs, path: this.paths.collectionFile }),
+      species: props.species,
+      achievements: props.achievements,
     })
 
     Object.freeze(this)
@@ -116,6 +148,7 @@ export class Minion {
       packageRoot: props.packageRoot ?? SANDBOX_PACKAGE_ROOT,
       dataDir: props.dataDir ?? SANDBOX_DATA_DIR,
       sessionsDir: props.sessionsDir ?? SANDBOX_SESSIONS_DIR,
+      projectsDir: props.projectsDir ?? SANDBOX_PROJECTS_DIR,
     })
   }
 

@@ -1,0 +1,64 @@
+import { zValidator } from "@hono/zod-validator"
+import { z } from "zod"
+import { factory } from "@/factory"
+import { helpGuard } from "@/lib/help-guard"
+import type { MinionRarity } from "@lib/engine/collection/species"
+
+const schema = z.object({})
+
+export const help = `Usage: minion dex
+
+実績とミニオン図鑑を表示する。セッション数・同時実行数・時間帯・トークン消費量を
+元に実績を解除し、条件を満たすと珍しいミニオンが出現する。`
+
+export default factory.createHandlers(helpGuard(help), zValidator("json", schema), async (c) => {
+  const minion = c.env.minion
+  const stats = minion.stats.collect()
+  const evaluation = minion.collection.evaluate(stats)
+  const { achievements, species } = minion.collection.dex()
+
+  const lines: string[] = []
+
+  lines.push(
+    `現在のミニオン: ${evaluation.species.name} (${rarityLabel(evaluation.species.rarity)})`,
+  )
+
+  const newlyUnlocked = evaluation.newlyUnlockedAchievements
+  if (newlyUnlocked.length > 0) {
+    lines.push("")
+    lines.push("実績を解除した!")
+    for (const a of newlyUnlocked) lines.push(`  ★ ${a.name} — ${a.description}`)
+  }
+  if (evaluation.newlyDiscoveredSpecies) {
+    lines.push("")
+    lines.push(
+      `新しいミニオンを発見した! ${evaluation.newlyDiscoveredSpecies.name} (${rarityLabel(evaluation.newlyDiscoveredSpecies.rarity)})`,
+    )
+  }
+
+  const unlockedCount = achievements.filter((a) => a.unlocked).length
+  lines.push("")
+  lines.push(`== 実績 (${unlockedCount}/${achievements.length}) ==`)
+  for (const a of achievements) {
+    const mark = a.unlocked ? "[x]" : "[ ]"
+    const detail = a.unlocked ? a.description : "???"
+    lines.push(`${mark} ${a.name} — ${detail}`)
+  }
+
+  const discoveredCount = species.filter((s) => s.discovered).length
+  lines.push("")
+  lines.push(`== ミニオン図鑑 (${discoveredCount}/${species.length}) ==`)
+  for (const s of species) {
+    const mark = s.discovered ? "[x]" : "[ ]"
+    const label = s.discovered
+      ? `${s.name} (${rarityLabel(s.rarity)}) — ${s.description}`
+      : `??? (${rarityLabel(s.rarity)})`
+    lines.push(`${mark} ${label}`)
+  }
+
+  return c.text(lines.join("\n"))
+})
+
+function rarityLabel(rarity: MinionRarity): string {
+  return rarity === "rare" ? "レア" : "コモン"
+}

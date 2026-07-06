@@ -41,4 +41,46 @@ describe("Minion.inMemory", () => {
 
     expect(await res.json()).toEqual({ sessions: [] })
   })
+
+  it("collects stats and evaluates the collection through the facade", () => {
+    const minion = Minion.inMemory()
+
+    const stats = minion.stats.collect()
+    const evaluation = minion.collection.evaluate(stats)
+
+    // Baseline sandbox stats always resolve to a common time-of-day species.
+    expect(evaluation.species.rarity).toBe("common")
+    expect(
+      minion.collection.dex().species.some((s) => s.id === evaluation.species.id && s.discovered),
+    ).toBe(true)
+  })
+
+  it("accepts a fully custom species/achievement catalog, with asset references, at construction", () => {
+    const minion = Minion.inMemory({
+      species: [
+        {
+          id: "custom",
+          name: "オリジナルミニオン",
+          rarity: "common",
+          description: "常に出現するオリジナル種族。",
+          condition: () => true,
+          asset: "sprites/custom.png",
+        },
+      ],
+      achievements: [
+        {
+          id: "custom-achievement",
+          name: "オリジナル実績",
+          description: "セッションを1つ実行した。",
+          condition: (s) => s.totalSessionsSeen >= 1,
+        },
+      ],
+    })
+
+    const evaluation = minion.collection.evaluate(minion.stats.collect())
+
+    expect(evaluation.species.id).toBe("custom")
+    expect(evaluation.species.asset).toBe("sprites/custom.png")
+    expect(minion.collection.dex().achievements.map((a) => a.id)).toEqual(["custom-achievement"])
+  })
 })

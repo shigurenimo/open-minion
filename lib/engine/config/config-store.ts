@@ -1,28 +1,23 @@
-import { dirname } from "node:path"
 import type { MinionFileSystem } from "@lib/engine/fs/file-system"
+import { JsonFileStore } from "@lib/engine/fs/json-file-store"
 
 type Props = {
   fs: MinionFileSystem
   path: string
 }
 
+const EMPTY: Record<string, string> = {}
+
 /** Reads/writes the flat string-keyed `config.json` (`minion config get/set/list`). */
 export class MinionConfigStore {
-  private readonly fs: MinionFileSystem
-  private readonly path: string
+  private readonly store: JsonFileStore<Record<string, string>>
 
   constructor(props: Props) {
-    this.fs = props.fs
-    this.path = props.path
+    this.store = new JsonFileStore({ fs: props.fs, path: props.path, defaultValue: EMPTY })
   }
 
   list(): Record<string, string> {
-    if (!this.fs.existsSync(this.path)) return {}
-    try {
-      return JSON.parse(this.fs.readFileSync(this.path))
-    } catch {
-      return {}
-    }
+    return this.store.read()
   }
 
   get(key: string): string {
@@ -32,11 +27,6 @@ export class MinionConfigStore {
   set(key: string, value: string): void {
     const config = this.list()
     config[key] = value
-    this.write(config)
-  }
-
-  private write(config: Record<string, string>): void {
-    this.fs.mkdirSync(dirname(this.path), { recursive: true })
-    this.fs.writeFileSync(this.path, JSON.stringify(config, null, 2))
+    this.store.write(config)
   }
 }

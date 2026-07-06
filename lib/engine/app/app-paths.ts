@@ -13,6 +13,9 @@ export type MinionPaths = {
   pidFile: string
   gatewayPidFile: string
   configFile: string
+  sessionStatsFile: string
+  usageScanFile: string
+  collectionFile: string
 }
 
 type Props = {
@@ -36,5 +39,8 @@ export function resolveMinionPaths(props: Props): MinionPaths {
     pidFile: join(dataDir, "pid"),
     gatewayPidFile: join(dataDir, "gateway.pid"),
     configFile: join(dataDir, "config.json"),
+    sessionStatsFile: join(dataDir, "session-stats.json"),
+    usageScanFile: join(dataDir, "usage-scan.json"),
+    collectionFile: join(dataDir, "collection.json"),
   }
 }

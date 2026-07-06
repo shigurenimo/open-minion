@@ -28,7 +28,7 @@ describe("readActiveSessions", () => {
 
     const sessions = readActiveSessions({ fs, process, clock, sessionsDir: DIR })
 
-    expect(sessions.get("a")).toEqual({ running: true, name: "repo" })
+    expect(sessions.get("a")).toEqual({ running: true, name: "repo", cwd: undefined })
   })
 
   it("marks an idle session on a live pid as not running", () => {
@@ -39,7 +39,23 @@ describe("readActiveSessions", () => {
 
     const sessions = readActiveSessions({ fs, process, clock, sessionsDir: DIR })
 
-    expect(sessions.get("a")).toEqual({ running: false, name: "repo" })
+    expect(sessions.get("a")).toEqual({ running: false, name: "repo", cwd: undefined })
+  })
+
+  it("records the session's cwd when present", () => {
+    const { fs, process, clock } = setup({
+      [`${DIR}/a.json`]: JSON.stringify({
+        sessionId: "a",
+        pid: 1,
+        status: "busy",
+        cwd: "/Users/n/project",
+      }),
+    })
+    process.setAlivePids([1])
+
+    const sessions = readActiveSessions({ fs, process, clock, sessionsDir: DIR })
+
+    expect(sessions.get("a")?.cwd).toBe("/Users/n/project")
   })
 
   it("keeps a dead session's last state within the stale window", () => {
@@ -52,7 +68,7 @@ describe("readActiveSessions", () => {
 
     const sessions = readActiveSessions({ fs, process, clock, sessionsDir: DIR })
 
-    expect(sessions.get("a")).toEqual({ running: false, name: "" })
+    expect(sessions.get("a")).toEqual({ running: false, name: "", cwd: undefined })
   })
 
   it("drops a dead session once past the stale window", () => {
