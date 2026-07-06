@@ -7,3 +7,5 @@ DerivedData/
 swift/.swiftpm/configuration/registries.json
 swift/.swiftpm/xcode/package.xcworkspace/contents.xcworkspacedata
 .netrc
+node_modules/
+/.minion

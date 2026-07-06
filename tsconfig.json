@@ -1,0 +1,15 @@
+{
+  "compilerOptions": {
+    "strict": true,
+    "target": "ES2022",
+    "module": "preserve",
+    "moduleResolution": "bundler",
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "types": ["node", "bun"],
+    "paths": {
+      "@/*": ["./cli/src/*"]
+    }
+  },
+  "include": ["cli/src"]
+}
