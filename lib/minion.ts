@@ -1,0 +1,142 @@
+import { homedir } from "node:os"
+import { join } from "node:path"
+import type { MinionFileSystem } from "@lib/engine/fs/file-system"
+import { MemoryMinionFileSystem } from "@lib/engine/fs/memory-file-system"
+import { NodeMinionFileSystem } from "@lib/engine/fs/node-file-system"
+import type { MinionProcessRunner } from "@lib/engine/process/process-runner"
+import { MemoryMinionProcessRunner } from "@lib/engine/process/memory-process-runner"
+import { NodeMinionProcessRunner } from "@lib/engine/process/node-process-runner"
+import type { MinionClock } from "@lib/engine/time/clock"
+import { MemoryMinionClock } from "@lib/engine/time/memory-clock"
+import { NodeMinionClock } from "@lib/engine/time/node-clock"
+import type { MinionRandomSource } from "@lib/engine/random/random-source"
+import { MemoryMinionRandomSource } from "@lib/engine/random/memory-random-source"
+import { NodeMinionRandomSource } from "@lib/engine/random/node-random-source"
+import { type MinionPaths, resolveMinionPaths } from "@lib/engine/app/app-paths"
+import { MinionAppRunner } from "@lib/engine/app/app-runner"
+import { MinionConfigStore } from "@lib/engine/config/config-store"
+import { MinionGatewayServer } from "@lib/engine/gateway/gateway-server"
+import { resolveGatewayDaemonScript } from "@lib/engine/gateway/resolve-daemon-script"
+
+const SANDBOX_PACKAGE_ROOT = "/sandbox/pkg"
+const SANDBOX_DATA_DIR = "/sandbox/.minion"
+const SANDBOX_SESSIONS_DIR = "/sandbox/.claude/sessions"
+
+type Props = {
+  /** Filesystem boundary. Replace with MemoryMinionFileSystem to sandbox all disk I/O. */
+  fs?: MinionFileSystem
+  /** Process runner used to build/spawn the Swift app and the gateway daemon. */
+  process?: MinionProcessRunner
+  /** Clock used for session-staleness checks and pet-behavior timing. */
+  clock?: MinionClock
+  /** Randomness used by the pet behavior picker. */
+  random?: MinionRandomSource
+  /** Directory containing `swift/` (the package root). Defaults to the installed package root. */
+  packageRoot?: string
+  /** State directory (pid files, config, build output). Defaults to `~/.minion`. */
+  dataDir?: string
+  /** Directory of Claude Code session files the gateway watches. Defaults to `~/.claude/sessions`. */
+  sessionsDir?: string
+}
+
+export type MinionGatewayServerOptions = {
+  port?: number
+  tickMs?: number
+}
+
+/**
+ * Facade that wires every minion facet together and exposes the public surface.
+ *
+ * All side-effecting boundaries (filesystem, process, clock, random) are
+ * injected via Props — passing memory implementations gives a fully
+ * sandboxed Minion that touches no real disk, processes, or wall-clock time.
+ *
+ * @example
+ * ```ts
+ * import { Minion } from "@shigureni/minion"
+ *
+ * const minion = new Minion()
+ * console.log(await minion.app.start(false))
+ * console.log(minion.app.status())
+ * ```
+ */
+export class Minion {
+  readonly paths: MinionPaths
+  readonly config: MinionConfigStore
+  readonly app: MinionAppRunner
+
+  private readonly fs: MinionFileSystem
+  private readonly process: MinionProcessRunner
+  private readonly clock: MinionClock
+  private readonly random: MinionRandomSource
+  private readonly sessionsDir: string
+
+  constructor(props: Props = {}) {
+    const packageRoot = props.packageRoot ?? defaultPackageRoot()
+    const fs = props.fs ?? new NodeMinionFileSystem()
+    const processRunner = props.process ?? new NodeMinionProcessRunner()
+    const clock = props.clock ?? new NodeMinionClock()
+    const random = props.random ?? new NodeMinionRandomSource()
+
+    this.fs = fs
+    this.process = processRunner
+    this.clock = clock
+    this.random = random
+    this.sessionsDir = props.sessionsDir ?? join(homedir(), ".claude", "sessions")
+
+    this.paths = resolveMinionPaths({ packageRoot, dataDir: props.dataDir })
+
+    this.config = new MinionConfigStore({ fs, path: this.paths.configFile })
+
+    this.app = new MinionAppRunner({
+      fs,
+      process: processRunner,
+      paths: this.paths,
+      gatewayCommand: ["bun", resolveGatewayDaemonScript()],
+    })
+
+    Object.freeze(this)
+  }
+
+  /**
+   * Sandboxed Minion wired with in-memory implementations for every IO
+   * boundary. Touches no real disk, processes, or wall-clock time — safe
+   * for tests and ad-hoc experiments. Override individual fields via `props`.
+   *
+   * NOT covered by `inMemory()`: `gatewayServer().start()` still calls
+   * `Bun.serve` and binds a real port; pass `port: 0` to let the OS pick one.
+   */
+  static inMemory(props: Props = {}): Minion {
+    return new Minion({
+      ...props,
+      fs: props.fs ?? new MemoryMinionFileSystem(),
+      process: props.process ?? new MemoryMinionProcessRunner(),
+      clock: props.clock ?? new MemoryMinionClock(),
+      random: props.random ?? new MemoryMinionRandomSource(),
+      packageRoot: props.packageRoot ?? SANDBOX_PACKAGE_ROOT,
+      dataDir: props.dataDir ?? SANDBOX_DATA_DIR,
+      sessionsDir: props.sessionsDir ?? SANDBOX_SESSIONS_DIR,
+    })
+  }
+
+  /**
+   * In-process gateway server (HTTP + WebSocket) that watches the sessions
+   * directory and drives the pet's animation state. The daemon spawned by
+   * `app.start()` runs this same class out-of-process via `gateway-daemon.ts`.
+   */
+  gatewayServer(options: MinionGatewayServerOptions = {}): MinionGatewayServer {
+    return new MinionGatewayServer({
+      fs: this.fs,
+      process: this.process,
+      clock: this.clock,
+      random: this.random,
+      sessionsDir: this.sessionsDir,
+      port: options.port,
+      tickMs: options.tickMs,
+    })
+  }
+}
+
+function defaultPackageRoot(): string {
+  return new URL("..", import.meta.url).pathname
+}

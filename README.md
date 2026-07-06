@@ -4,9 +4,10 @@ A tiny desktop pet that walks around your screen and reacts to your
 [Claude Code](https://claude.com/claude-code) sessions — idle while you're idle,
 running around while a session is busy.
 
-It's two parts: a Swift menu-less overlay app (`swift/`) that draws the pet, and a
-CLI (`cli/`) that builds/runs it and watches `~/.claude/sessions` to decide how the
-pet should behave.
+It's three parts: a Swift menu-less overlay app (`swift/`) that draws the pet, a
+programmable library (`lib/`) that builds/runs it and watches `~/.claude/sessions`
+to decide how the pet should behave, and a CLI (`cli/`) that's a thin consumer of
+that library.
 
 ## Requirements
 
@@ -50,6 +51,36 @@ Add `-h` to any command for its help text (e.g. `minion start -h`).
 State (pid files, config, and the Swift build output) lives in `~/.minion`,
 independent of wherever the package itself is installed.
 
+## Library
+
+Everything the CLI does is exposed programmatically through the `Minion` facade —
+the CLI (`cli/`) is just a Hono-routed consumer of it, wired via `c.env.minion`.
+
+```ts
+import { Minion } from "@shigureni/minion"
+
+const minion = new Minion()
+
+console.log(await minion.app.start(false)) // build (if needed) + launch the app + gateway
+console.log(minion.app.status())
+minion.config.set("greeting", "hello")
+```
+
+Every side-effecting boundary (filesystem, process spawning, clock, randomness) is
+injected, so tests can swap in an in-memory sandbox that touches no real disk,
+processes, or wall-clock time:
+
+```ts
+import { Minion } from "@shigureni/minion"
+
+const minion = Minion.inMemory()
+await minion.app.start(false)
+```
+
+See `lib/index.ts` for the full exported surface (the `Minion` facade, the
+`MinionAppRunner` / `MinionConfigStore` / `MinionGatewayServer` engine classes, and
+the `Node*`/`Memory*` implementation of each IO boundary).
+
 ## Development
 
 ```sh
@@ -60,6 +91,10 @@ bun run fmt
 bun run lint
 ```
 
-`cli/src/routes/<command>/route.ts` is one file per command (hono-routed, mirrors
-the structure of jobantenna-cli) — adding a command means adding a route file and
-wiring it into `cli/src/app.ts`.
+Business logic lives in `lib/` (build/start/kill/status, config, session watching,
+pet behavior) behind injected `MinionFileSystem` / `MinionProcessRunner` /
+`MinionClock` / `MinionRandomSource` boundaries — real (`Node*`) implementations for
+production, in-memory (`Memory*`) ones for tests. `cli/src/routes/<command>/route.ts`
+is one file per command (hono-routed, mirrors the structure of jobantenna-cli); each
+handler just calls into `c.env.minion` — adding a command means adding a route file,
+wiring it into `cli/src/app.ts`, and (if it's new behavior) adding it to `Minion`.

@@ -8,8 +8,9 @@
     "skipLibCheck": true,
     "types": ["node", "bun"],
     "paths": {
-      "@/*": ["./cli/src/*"]
+      "@/*": ["./cli/src/*"],
+      "@lib/*": ["./lib/*"]
     }
   },
-  "include": ["cli/src"]
+  "include": ["cli/src", "lib"]
 }

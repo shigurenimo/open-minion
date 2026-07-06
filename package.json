@@ -1,6 +1,6 @@
 {
   "name": "@shigureni/minion",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Desktop pet that reacts to your Claude Code session activity",
   "keywords": [
     "claude-code",
@@ -15,12 +15,20 @@
   },
   "files": [
     "cli/src",
+    "lib",
     "swift",
     "tsconfig.json",
     "!cli/src/**/*.test.ts",
+    "!lib/**/*.test.ts",
     "!swift/.build"
   ],
   "type": "module",
+  "main": "./lib/index.ts",
+  "types": "./lib/index.ts",
+  "exports": {
+    ".": "./lib/index.ts",
+    "./package.json": "./package.json"
+  },
   "publishConfig": {
     "access": "public"
   },

@@ -2,8 +2,12 @@
 import { app } from "@/app"
 import { postJson } from "@/lib/post-json"
 import { toRequest } from "@/router"
+import { Minion } from "@lib/minion"
 
 import pkg from "../../package.json" with { type: "json" }
+
+const minion = new Minion()
+const env = { minion }
 
 const HELP = `minion - open-minion CLI
 
@@ -41,13 +45,17 @@ if (request.global.help) {
     process.exit()
   }
 
-  const helpResponse = await app.request(request.path, postJson({ ...request.body, help: "true" }))
+  const helpResponse = await app.request(
+    request.path,
+    postJson({ ...request.body, help: "true" }),
+    env,
+  )
   console.log(helpResponse.ok ? await helpResponse.text() : HELP)
   process.exit()
 }
 
 try {
-  const response = await app.request(request.path, postJson(request.body))
+  const response = await app.request(request.path, postJson(request.body), env)
   const text = await response.text()
 
   if (!response.ok) {

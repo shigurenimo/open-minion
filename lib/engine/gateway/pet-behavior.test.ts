@@ -1,0 +1,95 @@
+import { describe, expect, it } from "vitest"
+import { MemoryMinionRandomSource } from "@lib/engine/random/memory-random-source"
+import { IDLE_CLIP, PetBehaviorEngine, pickAction } from "@lib/engine/gateway/pet-behavior"
+import type { SessionInfo } from "@lib/engine/gateway/sessions"
+
+describe("pickAction", () => {
+  it("picks the first action and its minimum duration when random always returns 0", () => {
+    const action = pickAction(new MemoryMinionRandomSource({ values: [0] }))
+    expect(action).toEqual({ clipIndex: 0, durationMs: 3000 })
+  })
+
+  it("picks the last action near a roll of 100 and scales duration by the fraction", () => {
+    const action = pickAction(new MemoryMinionRandomSource({ values: [0.99] }))
+    expect(action.clipIndex).toBe(12)
+    expect(action.durationMs).toBeCloseTo(2990, 5)
+  })
+})
+
+function sessions(entries: Record<string, SessionInfo>): Map<string, SessionInfo> {
+  return new Map(Object.entries(entries))
+}
+
+describe("PetBehaviorEngine", () => {
+  it("assigns a running clip to a newly seen running session", () => {
+    const engine = new PetBehaviorEngine({ random: new MemoryMinionRandomSource({ values: [0] }) })
+
+    const dirty = engine.tick(1000, sessions({ a: { running: true, name: "repo" } }))
+
+    expect(dirty).toBe(true)
+    expect(engine.snapshot()).toEqual([{ id: "a", state: "running", clipIndex: 0, name: "repo" }])
+  })
+
+  it("assigns the idle clip to a newly seen idle session", () => {
+    const engine = new PetBehaviorEngine({ random: new MemoryMinionRandomSource() })
+
+    engine.tick(1000, sessions({ a: { running: false, name: "repo" } }))
+
+    expect(engine.snapshot()).toEqual([
+      { id: "a", state: "sleeping", clipIndex: IDLE_CLIP, name: "repo" },
+    ])
+  })
+
+  it("removes a session that disappears from the active set", () => {
+    const engine = new PetBehaviorEngine({ random: new MemoryMinionRandomSource() })
+    engine.tick(1000, sessions({ a: { running: true, name: "repo" } }))
+
+    const dirty = engine.tick(1100, sessions({}))
+
+    expect(dirty).toBe(true)
+    expect(engine.snapshot()).toEqual([])
+  })
+
+  it("reports dirty when a session's name changes", () => {
+    const engine = new PetBehaviorEngine({ random: new MemoryMinionRandomSource() })
+    engine.tick(1000, sessions({ a: { running: true, name: "repo" } }))
+
+    const dirty = engine.tick(1100, sessions({ a: { running: true, name: "renamed" } }))
+
+    expect(dirty).toBe(true)
+    expect(engine.snapshot()[0]?.name).toBe("renamed")
+  })
+
+  it("resets to the idle clip when a session stops running", () => {
+    const engine = new PetBehaviorEngine({ random: new MemoryMinionRandomSource({ values: [0] }) })
+    engine.tick(1000, sessions({ a: { running: true, name: "repo" } }))
+
+    const dirty = engine.tick(1100, sessions({ a: { running: false, name: "repo" } }))
+
+    expect(dirty).toBe(true)
+    expect(engine.snapshot()[0]?.clipIndex).toBe(IDLE_CLIP)
+    expect(engine.snapshot()[0]?.state).toBe("sleeping")
+  })
+
+  it("picks a new action once the current one's duration elapses", () => {
+    const random = new MemoryMinionRandomSource({ values: [0, 0, 0.99, 0.99] })
+    const engine = new PetBehaviorEngine({ random })
+    engine.tick(1000, sessions({ a: { running: true, name: "repo" } })) // clip 0, ends at 1000+3000=4000
+
+    const stillWaiting = engine.tick(2000, sessions({ a: { running: true, name: "repo" } }))
+    expect(stillWaiting).toBe(false)
+
+    const elapsed = engine.tick(4000, sessions({ a: { running: true, name: "repo" } }))
+    expect(elapsed).toBe(true)
+    expect(engine.snapshot()[0]?.clipIndex).toBe(12)
+  })
+
+  it("is not dirty on a steady-state tick with no changes", () => {
+    const engine = new PetBehaviorEngine({ random: new MemoryMinionRandomSource({ values: [0] }) })
+    engine.tick(1000, sessions({ a: { running: true, name: "repo" } }))
+
+    const dirty = engine.tick(1500, sessions({ a: { running: true, name: "repo" } }))
+
+    expect(dirty).toBe(false)
+  })
+})
