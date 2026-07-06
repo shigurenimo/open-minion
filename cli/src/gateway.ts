@@ -158,6 +158,9 @@ function tick(): void {
         const action = pickAction()
         existing.clipIndex = action.clipIndex
         existing.actionEndsAt = now + action.durationMs
+      } else {
+        // 稼働が止まったら、直前のアクションの途中コマで固まらないよう待機姿勢に戻す。
+        existing.clipIndex = IDLE_CLIP
       }
       dirty = true
     } else if (info.running && now >= existing.actionEndsAt) {
