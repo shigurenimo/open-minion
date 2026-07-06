@@ -13,11 +13,12 @@ import { join } from "node:path"
 
 const PACKAGE_ROOT = join(import.meta.dir, "..", "..", "..")
 const APP_ROOT = join(PACKAGE_ROOT, "swift")
-const BIN_PATH = join(APP_ROOT, ".build", "release", "open-minion")
-const DEBUG_BIN_PATH = join(APP_ROOT, ".build", "debug", "open-minion")
-// bunx はパッケージをキャッシュディレクトリに展開するため、ユーザー状態は
-// パッケージ本体とは切り離してホームディレクトリ配下に置く。
-const DATA_DIR = join(homedir(), ".config", "minion")
+// bunx はパッケージ本体をキャッシュディレクトリに展開するため、状態とビルド
+// 成果物はパッケージの場所に依存しないよう ~/.minion に置く。
+const DATA_DIR = join(homedir(), ".minion")
+const BUILD_PATH = join(DATA_DIR, "build")
+const BIN_PATH = join(BUILD_PATH, "release", "open-minion")
+const DEBUG_BIN_PATH = join(BUILD_PATH, "debug", "open-minion")
 const DATA_FILE = join(DATA_DIR, "data.json")
 const PID_FILE = join(DATA_DIR, "pid")
 const CONFIG_FILE = join(DATA_DIR, "config.json")
@@ -83,7 +84,9 @@ function acquireStartLock(): boolean {
 
 async function build(debug: boolean): Promise<boolean> {
   console.log("ビルド中...")
-  const args = debug ? ["swift", "build"] : ["swift", "build", "-c", "release"]
+  const args = debug
+    ? ["swift", "build", "--scratch-path", BUILD_PATH]
+    : ["swift", "build", "-c", "release", "--scratch-path", BUILD_PATH]
   const proc = Bun.spawn(args, {
     cwd: APP_ROOT,
     stdout: "inherit",

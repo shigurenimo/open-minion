@@ -47,8 +47,8 @@ minion
 
 Add `-h` to any command for its help text (e.g. `minion start -h`).
 
-State (pid files, config) lives in `~/.config/minion`, independent of wherever the
-package itself is installed.
+State (pid files, config, and the Swift build output) lives in `~/.minion`,
+independent of wherever the package itself is installed.
 
 ## Development
 
