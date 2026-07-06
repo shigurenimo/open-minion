@@ -8,13 +8,16 @@ import {
   rmSync,
   writeFileSync,
 } from "node:fs"
+import { homedir } from "node:os"
 import { join } from "node:path"
 
-const ROOT = join(import.meta.dir, "..", "..", "..")
-const APP_ROOT = join(ROOT, "swift")
+const PACKAGE_ROOT = join(import.meta.dir, "..", "..", "..")
+const APP_ROOT = join(PACKAGE_ROOT, "swift")
 const BIN_PATH = join(APP_ROOT, ".build", "release", "open-minion")
 const DEBUG_BIN_PATH = join(APP_ROOT, ".build", "debug", "open-minion")
-const DATA_DIR = join(ROOT, ".minion")
+// bunx はパッケージをキャッシュディレクトリに展開するため、ユーザー状態は
+// パッケージ本体とは切り離してホームディレクトリ配下に置く。
+const DATA_DIR = join(homedir(), ".config", "minion")
 const DATA_FILE = join(DATA_DIR, "data.json")
 const PID_FILE = join(DATA_DIR, "pid")
 const CONFIG_FILE = join(DATA_DIR, "config.json")
