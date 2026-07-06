@@ -18,7 +18,7 @@ pet should behave.
 ## Usage
 
 ```sh
-bunx @shigurenimo/minion
+bunx @shigureni/minion
 ```
 
 This builds the app on first run (subsequent runs reuse the build unless the Swift
@@ -28,7 +28,7 @@ that watches your Claude Code sessions.
 Or install it globally so the `minion` command is always available:
 
 ```sh
-bun add -g @shigurenimo/minion
+bun add -g @shigureni/minion
 minion
 ```
 
