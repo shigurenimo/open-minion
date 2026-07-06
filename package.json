@@ -6,6 +6,12 @@
     "minion": "cli/src/index.ts"
   },
   "type": "module",
+  "scripts": {
+    "check": "vp check",
+    "fmt": "vp fmt",
+    "lint": "vp lint",
+    "test": "vp test"
+  },
   "dependencies": {
     "@hono/zod-validator": "^0.7.6",
     "hono": "^4.12.8",
@@ -14,6 +20,8 @@
   "devDependencies": {
     "@types/bun": "^1.3.14",
     "@types/node": "^26.1.0",
-    "typescript": "^6.0.3"
+    "@voidzero-dev/vite-plus-core": "^0.2.2",
+    "typescript": "^6.0.3",
+    "vite-plus": "^0.2.2"
   }
 }
