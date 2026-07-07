@@ -34,15 +34,17 @@ minion
 
 ## Commands
 
-| Command                          | What it does                             |
-| -------------------------------- | ---------------------------------------- |
-| `minion` / `minion start`        | Start the pet. No-op if already running. |
-| `minion kill`                    | Stop the pet and its gateway.            |
-| `minion reboot`                  | Restart.                                 |
-| `minion status`                  | Is it running?                           |
-| `minion dex`                     | Your achievements and minion collection. |
-| `minion config list / get / set` | Tweak settings.                          |
-| `minion dev`                     | Restart with a debug build.              |
+| Command                          | What it does                                 |
+| -------------------------------- | -------------------------------------------- |
+| `minion` / `minion start`        | Start the pet. No-op if already running.     |
+| `minion kill`                    | Stop the pet and its gateway.                |
+| `minion reboot`                  | Restart.                                     |
+| `minion serve`                   | Run the gateway in the foreground (Windows). |
+| `minion status`                  | Is it running?                               |
+| `minion dex`                     | Your achievements and minion collection.     |
+| `minion discord status`          | Discord integration status.                  |
+| `minion config list / get / set` | Tweak settings.                              |
+| `minion dev`                     | Restart with a debug build.                  |
 
 Add `-h` to any command for details. Config lives in `~/.config/minion/config.json`,
 runtime state in `~/.minion`.
