@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest"
-import { app } from "./app"
+import { app, createMinionApp, DEFAULT_COMMANDS } from "./app"
+import { factory } from "./factory"
 import { postJson } from "./lib/post-json"
 import { MemoryMinionFileSystem } from "../../lib/engine/fs/memory-file-system"
 import { MemoryMinionProcessRunner } from "../../lib/engine/process/memory-process-runner"
@@ -158,5 +159,57 @@ describe("app routes", () => {
     const text = await res.text()
 
     expect(text).toContain("[x] はじめの一歩 — はじめてセッションを実行した。")
+  })
+})
+
+describe("createMinionApp", () => {
+  it("mounts a custom command alongside the built-ins", async () => {
+    const party = factory.createHandlers((c) => c.text("🎉"))
+    const custom = createMinionApp({
+      commands: [...DEFAULT_COMMANDS, { path: "/party", handlers: party }],
+    })
+
+    const res = await custom.request("/party", postJson({}), { minion: Minion.inMemory() })
+    expect(await res.text()).toBe("🎉")
+
+    const status = await custom.request("/status", postJson({}), { minion: Minion.inMemory() })
+    expect(status.status).toBe(200)
+  })
+
+  it("drops a removed built-in and shows the custom usage line on 404", async () => {
+    const custom = createMinionApp({
+      commands: DEFAULT_COMMANDS.filter((command) => command.path !== "/dex"),
+      usage: "minion [start|kill|party]",
+    })
+
+    const res = await custom.request("/dex", postJson({}), { minion: Minion.inMemory() })
+
+    expect(res.status).toBe(404)
+    expect(await res.text()).toContain("minion [start|kill|party]")
+  })
+})
+
+describe("discord status", () => {
+  it("reports the gateway as down through the sandboxed facade, without real network", async () => {
+    const minion = Minion.inMemory()
+    minion.config.set("discord.token", "x".repeat(20))
+    minion.config.set("discord.guildId", "g1")
+
+    const res = await app.request("/discord/status", postJson({}), { minion })
+    const text = await res.text()
+
+    expect(text).toContain("xxxx...xxxx")
+    expect(text).toContain("gateway: 停止中")
+  })
+
+  it("shows the disabled notice when discord.enabled=false", async () => {
+    const minion = Minion.inMemory()
+    minion.config.set("discord.token", "x".repeat(20))
+    minion.config.set("discord.guildId", "g1")
+    minion.config.set("discord.enabled", "false")
+
+    const res = await app.request("/discord/status", postJson({}), { minion })
+
+    expect(await res.text()).toContain("無効化されています")
   })
 })

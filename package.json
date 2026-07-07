@@ -30,6 +30,7 @@
     ".": "./lib/index.ts",
     "./app": "./lib/app.ts",
     "./boundaries": "./lib/boundaries.ts",
+    "./cli": "./cli/src/cli.ts",
     "./collection": "./lib/collection.ts",
     "./config": "./lib/config.ts",
     "./discord": "./lib/discord.ts",

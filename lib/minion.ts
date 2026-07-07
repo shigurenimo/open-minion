@@ -26,6 +26,11 @@ import { MemoryMinionWebSocketFactory } from "./engine/discord/memory-websocket-
 import { NodeMinionWebSocketFactory } from "./engine/discord/node-websocket-factory"
 import type { MinionWebSocketFactory } from "./engine/discord/websocket-factory"
 import { ClaudeSessionsPetSource, type PetSource } from "./engine/gateway/pet-source"
+import {
+  type GatewaySnapshot,
+  type MinionFetch,
+  readGatewaySnapshot,
+} from "./engine/gateway/gateway-probe"
 import { MinionGatewayServer } from "./engine/gateway/gateway-server"
 import { resolveGatewayDaemonScript } from "./engine/gateway/resolve-daemon-script"
 import { SessionStatsTracker } from "./engine/stats/session-stats-tracker"
@@ -49,6 +54,8 @@ export type MinionOptions = {
   random?: MinionRandomSource
   /** WebSocket-client boundary used by the Discord presence source. Replace with MemoryMinionWebSocketFactory to sandbox network I/O. */
   webSockets?: MinionWebSocketFactory
+  /** HTTP fetch used by `gatewaySnapshot()` to probe the running gateway. Replace to sandbox network I/O. */
+  fetchFn?: MinionFetch
   /** Directory containing `swift/` (the package root). Defaults to the installed package root. */
   packageRoot?: string
   /** Runtime-state directory (pid files, build output, stats). Defaults to `~/.minion`. */
@@ -108,6 +115,7 @@ export class Minion {
   private readonly clock: MinionClock
   private readonly random: MinionRandomSource
   private readonly webSockets: MinionWebSocketFactory
+  private readonly fetchFn: MinionFetch
   private readonly sessionsDir: string
   private readonly projectsDir: string
   private readonly extraPetSources: readonly PetSource[]
@@ -125,6 +133,7 @@ export class Minion {
     this.clock = clock
     this.random = random
     this.webSockets = props.webSockets ?? new NodeMinionWebSocketFactory()
+    this.fetchFn = props.fetchFn ?? ((url, init) => fetch(url, init))
     this.sessionsDir = props.sessionsDir ?? join(homedir(), ".claude", "sessions")
     this.projectsDir = projectsDir
     this.extraPetSources = props.petSources ?? []
@@ -191,6 +200,9 @@ export class Minion {
       clock,
       random: props.random ?? new MemoryMinionRandomSource(),
       webSockets: props.webSockets ?? new MemoryMinionWebSocketFactory(),
+      fetchFn:
+        props.fetchFn ??
+        (() => Promise.reject(new Error("サンドボックスの Minion はネットワークに接続できません"))),
       packageRoot: props.packageRoot ?? SANDBOX_PACKAGE_ROOT,
       dataDir: props.dataDir ?? SANDBOX_DATA_DIR,
       configDir: props.configDir ?? SANDBOX_CONFIG_DIR,
@@ -219,6 +231,16 @@ export class Minion {
       port: options.port,
       tickMs: options.tickMs,
     })
+  }
+
+  /**
+   * Snapshot from the *running* gateway process (the daemon started by
+   * `app.start()`, or a foreground `minion serve`) over HTTP. Returns an
+   * Error when no gateway is listening. `gatewayServer()` by contrast
+   * constructs a new in-process server.
+   */
+  async gatewaySnapshot(options: { port?: number } = {}): Promise<GatewaySnapshot | Error> {
+    return readGatewaySnapshot({ port: options.port, fetchFn: this.fetchFn })
   }
 
   private claudePetSources(): PetSource[] {
