@@ -13,10 +13,12 @@ export const help = `Usage: minion dev
 export default factory.createHandlers(helpGuard(help), bodyValidator(schema), async (c) => {
   const killResult = c.env.minion.app.kill()
   if (killResult instanceof Error) return c.text(killResult.message, 500)
+  // 何も止めていないときは kill の行を出さず、起動結果だけを表示する。
+  const killLine = killResult.kind === "killed" ? [formatKillResult(killResult)] : []
   const startResult = await c.env.minion.app.start({ debug: true })
   if (startResult instanceof Error) {
-    return c.text([formatKillResult(killResult), startResult.message].join("\n"), 500)
+    return c.text([...killLine, startResult.message].join("\n"), 500)
   }
-  const text = [formatKillResult(killResult), formatStartResult(startResult)].join("\n")
+  const text = [...killLine, formatStartResult(startResult)].join("\n")
   return c.text(text, isStartError(startResult) ? 500 : 200)
 })

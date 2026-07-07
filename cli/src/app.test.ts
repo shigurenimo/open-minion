@@ -26,7 +26,7 @@ describe("app routes", () => {
     expect(await res.text()).toMatch(/^起動した \(pid \d+\)$/)
   })
 
-  it("kills the old process and starts fresh when /start finds one running", async () => {
+  it("kills the old process and starts fresh when /reboot finds one running", async () => {
     const fs = new MemoryMinionFileSystem({
       files: { "/sandbox/pkg/swift/Package.swift": "// package" },
     })
@@ -36,10 +36,36 @@ describe("app routes", () => {
     // 1回目のstartが生んだ app + gateway のpidを生存扱いにする
     process.setAlivePids([1001, 1002])
 
-    const res = await app.request("/start", postJson({}), { minion })
+    const res = await app.request("/reboot", postJson({}), { minion })
 
     expect(res.status).toBe(200)
     expect(await res.text()).toMatch(/^停止した \(pid 1001\)\n起動した \(pid \d+\)$/)
+  })
+
+  it("omits the kill line when /reboot had nothing to stop", async () => {
+    const fs = new MemoryMinionFileSystem({
+      files: { "/sandbox/pkg/swift/Package.swift": "// package" },
+    })
+    const minion = Minion.inMemory({ fs })
+
+    const res = await app.request("/reboot", postJson({}), { minion })
+
+    expect(res.status).toBe(200)
+    expect(await res.text()).toMatch(/^起動した \(pid \d+\)$/)
+  })
+
+  it("no-ops on /start when the app is already running", async () => {
+    const fs = new MemoryMinionFileSystem({
+      files: { "/sandbox/pkg/swift/Package.swift": "// package" },
+    })
+    const process = new MemoryMinionProcessRunner()
+    const minion = Minion.inMemory({ fs, process })
+    await app.request("/start", postJson({}), { minion })
+    process.setAlivePids([1001, 1002])
+
+    const res = await app.request("/start", postJson({}), { minion })
+
+    expect(await res.text()).toBe("すでに起動中 (pid 1001)")
   })
 
   it("round-trips a value through /config/set and /config/get", async () => {

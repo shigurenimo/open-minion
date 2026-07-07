@@ -20,10 +20,10 @@ Usage:
   minion <command> -h          Show help for a command
 
 Commands:
-  start                     古いプロセスを止めて起動する (デフォルト)
+  start                     起動する (すでに起動中なら何もしない)
   dev                       停止してデバッグビルドで起動し直す
   kill                      停止する
-  reboot                    停止してリリースビルドで起動し直す
+  reboot                    停止してリリースビルドで起動し直す (デフォルト)
   status                    起動状況を表示する
   dex                       実績とミニオン図鑑を表示する
   config list               設定値を一覧表示する
@@ -35,7 +35,8 @@ Global flags:
   -v, --version  Show version`
 
 const argv = process.argv.slice(2)
-const args = argv.length === 0 ? ["start"] : argv
+// 引数なしの `minion` は「古いプロセスを止めて起動し直す」= reboot に落とす。
+const args = argv.length === 0 ? ["reboot"] : argv
 
 const request = toRequest(args)
 
