@@ -1,6 +1,6 @@
 {
   "name": "@shigureni/minion",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "description": "Desktop pet that reacts to your Claude Code session activity",
   "keywords": [
     "claude-code",

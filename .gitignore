@@ -10,3 +10,4 @@ swift/.swiftpm/xcode/package.xcworkspace/contents.xcworkspacedata
 node_modules/
 /electron/dist/
 /electron/assets/
+/dist/
