@@ -1,7 +1,7 @@
 import { dirname } from "node:path"
 import type { z } from "zod"
-import { safeJsonParse } from "@lib/engine/errors"
-import type { MinionFileSystem } from "@lib/engine/fs/file-system"
+import { safeJsonParse } from "../errors"
+import type { MinionFileSystem } from "./file-system"
 
 type Props<T> = {
   fs: MinionFileSystem

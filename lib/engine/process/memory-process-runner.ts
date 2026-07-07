@@ -1,4 +1,4 @@
-import { MinionProcessRunner, type RunOptions } from "@lib/engine/process/process-runner"
+import { MinionProcessRunner, type RunOptions } from "./process-runner"
 
 export type MemoryProcessCall =
   | { kind: "runInherit"; command: string[]; options: RunOptions }

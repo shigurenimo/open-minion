@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest"
-import { app } from "@/app"
-import { postJson } from "@/lib/post-json"
-import { MemoryMinionFileSystem } from "@lib/engine/fs/memory-file-system"
-import { MemoryMinionProcessRunner } from "@lib/engine/process/memory-process-runner"
-import { Minion } from "@lib/minion"
+import { app } from "./app"
+import { postJson } from "./lib/post-json"
+import { MemoryMinionFileSystem } from "../../lib/engine/fs/memory-file-system"
+import { MemoryMinionProcessRunner } from "../../lib/engine/process/memory-process-runner"
+import { Minion } from "../../lib/minion"
 
 describe("app routes", () => {
   it("returns status text for /status via the injected Minion facade", async () => {

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest"
-import { DEFAULT_ACHIEVEMENTS } from "@lib/engine/collection/achievements"
-import { timeBucketForHour } from "@lib/engine/stats/stats-snapshot"
-import type { StatsSnapshot } from "@lib/engine/stats/stats-snapshot"
+import { DEFAULT_ACHIEVEMENTS } from "./achievements"
+import { timeBucketForHour } from "../stats/stats-snapshot"
+import type { StatsSnapshot } from "../stats/stats-snapshot"
 
 function stats(overrides: Partial<StatsSnapshot> = {}): StatsSnapshot {
   const hour = overrides.hour ?? 12

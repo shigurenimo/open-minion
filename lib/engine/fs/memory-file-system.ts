@@ -1,4 +1,4 @@
-import { type MinionFileStat, MinionFileSystem } from "@lib/engine/fs/file-system"
+import { type MinionFileStat, MinionFileSystem } from "./file-system"
 
 type Props = {
   dirs?: string[]

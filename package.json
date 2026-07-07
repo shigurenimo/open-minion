@@ -23,10 +23,18 @@
     "!swift/.build"
   ],
   "type": "module",
+  "sideEffects": false,
   "main": "./lib/index.ts",
   "types": "./lib/index.ts",
   "exports": {
     ".": "./lib/index.ts",
+    "./app": "./lib/app.ts",
+    "./boundaries": "./lib/boundaries.ts",
+    "./collection": "./lib/collection.ts",
+    "./config": "./lib/config.ts",
+    "./discord": "./lib/discord.ts",
+    "./gateway": "./lib/gateway.ts",
+    "./stats": "./lib/stats.ts",
     "./package.json": "./package.json"
   },
   "publishConfig": {

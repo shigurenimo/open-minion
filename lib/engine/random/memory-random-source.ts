@@ -1,4 +1,4 @@
-import { MinionRandomSource } from "@lib/engine/random/random-source"
+import { MinionRandomSource } from "./random-source"
 
 type Props = {
   /** Values replayed in order, then repeated from the start once exhausted. Defaults to always `0`. */

@@ -1,8 +1,8 @@
 import { z } from "zod"
-import { DEFAULT_GATEWAY_PORT } from "@lib/engine/gateway/gateway-server"
-import { factory } from "@/factory"
-import { bodyValidator } from "@/lib/body-validator"
-import { helpGuard } from "@/lib/help-guard"
+import { DEFAULT_GATEWAY_PORT } from "../../../../../lib/engine/gateway/gateway-server"
+import { factory } from "../../../factory"
+import { bodyValidator } from "../../../lib/body-validator"
+import { helpGuard } from "../../../lib/help-guard"
 
 const schema = z.strictObject({})
 

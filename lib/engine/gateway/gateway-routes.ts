@@ -1,5 +1,5 @@
 import { Hono } from "hono"
-import type { PetBehaviorEngine } from "@lib/engine/gateway/pet-behavior"
+import type { PetBehaviorEngine } from "./pet-behavior"
 
 /**
  * GET /sessions — the current pet snapshot as JSON. Kept as a plain Hono app

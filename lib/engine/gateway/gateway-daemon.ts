@@ -1,5 +1,5 @@
 #!/usr/bin/env bun
-import { Minion } from "@lib/minion"
+import { Minion } from "../../minion"
 
 const minion = new Minion()
 const port = Number(process.env.MINION_GATEWAY_PORT) || undefined

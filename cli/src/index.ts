@@ -1,8 +1,8 @@
 #!/usr/bin/env bun
-import { app } from "@/app"
-import { postJson } from "@/lib/post-json"
-import { toRequest } from "@/router"
-import { Minion } from "@lib/minion"
+import { app } from "./app"
+import { postJson } from "./lib/post-json"
+import { toRequest } from "./router"
+import { Minion } from "../../lib/minion"
 
 import pkg from "../../package.json" with { type: "json" }
 

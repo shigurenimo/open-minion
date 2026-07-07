@@ -1,9 +1,9 @@
-import { toError } from "@lib/engine/errors"
+import { toError } from "../errors"
 import {
   MinionWebSocketConnection,
   MinionWebSocketFactory,
   type MinionWebSocketHandlers,
-} from "@lib/engine/discord/websocket-factory"
+} from "./websocket-factory"
 
 class NodeMinionWebSocketConnection extends MinionWebSocketConnection {
   private readonly socket: WebSocket

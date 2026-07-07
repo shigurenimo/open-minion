@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest"
-import { MemoryMinionClock } from "@lib/engine/time/memory-clock"
-import { MemoryMinionRandomSource } from "@lib/engine/random/memory-random-source"
-import { MinionGatewayServer } from "@lib/engine/gateway/gateway-server"
+import { MemoryMinionClock } from "../time/memory-clock"
+import { MemoryMinionRandomSource } from "../random/memory-random-source"
+import { MinionGatewayServer } from "./gateway-server"
 
 // `.start()` wraps a real `Bun.serve` and isn't exercised here — this suite
 // runs under Node (vitest), where the `Bun` global doesn't exist. `.routes`

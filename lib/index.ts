@@ -1,7 +1,5 @@
-// Public API surface for the @shigureni/minion package.
-//
-// This is the programmable counterpart to the `minion` CLI — the CLI (cli/)
-// is a thin Hono-routed consumer of the same `Minion` facade exported here.
+// Public API surface for the @shigureni/minion package — the batteries-included
+// entry: the `Minion` facade plus every area re-exported.
 //
 //   import { Minion } from "@shigureni/minion"
 //
@@ -11,66 +9,27 @@
 //
 // Pass `Minion.inMemory()` to get a fully sandboxed instance (no real disk,
 // processes, or wall-clock time) for tests or ad-hoc experiments.
+//
+// Importing this entry pulls the whole library into a bundle. When composing
+// your own pieces (a custom PetSource, a bare gateway, just the Discord
+// client), import the area entry instead — each is a separate module graph:
+//
+//   @shigureni/minion/gateway     PetSource / PetBehaviorEngine / MinionGatewayServer
+//   @shigureni/minion/discord     Discord presence source + raw Gateway WS client
+//   @shigureni/minion/app         Swift app + daemon lifecycle, path layout
+//   @shigureni/minion/stats       session/token stats
+//   @shigureni/minion/collection  species + achievements (the dex)
+//   @shigureni/minion/config      the config.json store
+//   @shigureni/minion/boundaries  IO boundaries (fs/process/clock/random/ws) + Node/Memory impls
+//   @shigureni/minion/cli         assemble the `minion` CLI with your own commands
 
 // Facade
-export * from "@lib/minion"
+export * from "./minion"
 
-// Error-as-value helpers — fallible operations return `T | Error`, never throw
-export * from "@lib/engine/errors"
-
-// App — build/start/kill/status for the Swift app + gateway daemon
-export * from "@lib/engine/app/app-paths"
-export * from "@lib/engine/app/app-runner"
-export * from "@lib/engine/app/source-hash"
-
-// Config — flat string-keyed `config.json` store
-export * from "@lib/engine/config/config-store"
-
-// Gateway — session watching + pet behavior + the in-process HTTP/WS server
-export * from "@lib/engine/gateway/sessions"
-export * from "@lib/engine/gateway/pet-source"
-export * from "@lib/engine/gateway/pet-behavior"
-export * from "@lib/engine/gateway/gateway-routes"
-export * from "@lib/engine/gateway/gateway-server"
-export * from "@lib/engine/gateway/resolve-daemon-script"
-
-// Discord — friend presence as a pet source (bot in a shared guild, GUILD_PRESENCES intent)
-export * from "@lib/engine/discord/gateway-payloads"
-export * from "@lib/engine/discord/presence-cache"
-export * from "@lib/engine/discord/discord-gateway-client"
-export * from "@lib/engine/discord/discord-pet-source"
-
-// Stats — session/token tracking feeding achievement + minion-species conditions
-export * from "@lib/engine/stats/stats-snapshot"
-export * from "@lib/engine/stats/session-stats-tracker"
-export * from "@lib/engine/stats/token-usage-tracker"
-export * from "@lib/engine/stats/stats-collector"
-
-// Collection — the minion dex: rarity-tiered species + achievements, unlocked over time
-export * from "@lib/engine/collection/moon"
-export * from "@lib/engine/collection/species"
-export * from "@lib/engine/collection/achievements"
-export * from "@lib/engine/collection/collection-store"
-export * from "@lib/engine/collection/collection-tracker"
-
-// IO boundaries (abstract + Node / Memory implementations)
-export * from "@lib/engine/fs/file-system"
-export * from "@lib/engine/fs/node-file-system"
-export * from "@lib/engine/fs/memory-file-system"
-export * from "@lib/engine/fs/json-file-store"
-
-export * from "@lib/engine/process/process-runner"
-export * from "@lib/engine/process/node-process-runner"
-export * from "@lib/engine/process/memory-process-runner"
-
-export * from "@lib/engine/time/clock"
-export * from "@lib/engine/time/node-clock"
-export * from "@lib/engine/time/memory-clock"
-
-export * from "@lib/engine/random/random-source"
-export * from "@lib/engine/random/node-random-source"
-export * from "@lib/engine/random/memory-random-source"
-
-export * from "@lib/engine/discord/websocket-factory"
-export * from "@lib/engine/discord/node-websocket-factory"
-export * from "@lib/engine/discord/memory-websocket-factory"
+export * from "./boundaries"
+export * from "./config"
+export * from "./app"
+export * from "./gateway"
+export * from "./discord"
+export * from "./stats"
+export * from "./collection"

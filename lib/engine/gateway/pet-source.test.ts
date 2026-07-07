@@ -1,13 +1,13 @@
 import { describe, expect, it } from "vitest"
-import { MemoryMinionFileSystem } from "@lib/engine/fs/memory-file-system"
-import { MemoryMinionProcessRunner } from "@lib/engine/process/memory-process-runner"
-import { MemoryMinionClock } from "@lib/engine/time/memory-clock"
-import { MemoryMinionRandomSource } from "@lib/engine/random/memory-random-source"
-import { DiscordGatewayClient } from "@lib/engine/discord/discord-gateway-client"
-import { DiscordPetSource } from "@lib/engine/discord/discord-pet-source"
-import { MemoryMinionWebSocketFactory } from "@lib/engine/discord/memory-websocket-factory"
-import { ClaudeSessionsPetSource, PetSource, mergePetSources } from "@lib/engine/gateway/pet-source"
-import type { SessionInfo } from "@lib/engine/gateway/sessions"
+import { MemoryMinionFileSystem } from "../fs/memory-file-system"
+import { MemoryMinionProcessRunner } from "../process/memory-process-runner"
+import { MemoryMinionClock } from "../time/memory-clock"
+import { MemoryMinionRandomSource } from "../random/memory-random-source"
+import { DiscordGatewayClient } from "../discord/discord-gateway-client"
+import { DiscordPetSource } from "../discord/discord-pet-source"
+import { MemoryMinionWebSocketFactory } from "../discord/memory-websocket-factory"
+import { ClaudeSessionsPetSource, PetSource, mergePetSources } from "./pet-source"
+import type { SessionInfo } from "./sessions"
 
 class FixedPetSource extends PetSource {
   private readonly entries: Map<string, SessionInfo>

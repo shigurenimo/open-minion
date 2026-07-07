@@ -1,13 +1,13 @@
 import { describe, expect, it } from "vitest"
-import { MemoryMinionRandomSource } from "@lib/engine/random/memory-random-source"
+import { MemoryMinionRandomSource } from "../random/memory-random-source"
 import {
   IDLE_CLIP,
   PetBehaviorEngine,
   pickAction,
   pickGamingAction,
   pickSleepingAction,
-} from "@lib/engine/gateway/pet-behavior"
-import type { SessionInfo } from "@lib/engine/gateway/sessions"
+} from "./pet-behavior"
+import type { SessionInfo } from "./sessions"
 
 describe("pickAction", () => {
   it("picks the first action and its minimum duration when random always returns 0", () => {

@@ -1,5 +1,5 @@
-import { toError } from "@lib/engine/errors"
-import { MinionProcessRunner, type RunOptions } from "@lib/engine/process/process-runner"
+import { toError } from "../errors"
+import { MinionProcessRunner, type RunOptions } from "./process-runner"
 
 export class NodeMinionProcessRunner extends MinionProcessRunner {
   async runInherit(command: string[], options: RunOptions = {}): Promise<number | Error> {

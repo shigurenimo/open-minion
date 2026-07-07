@@ -1,4 +1,4 @@
-import type { StatsSnapshot } from "@lib/engine/stats/stats-snapshot"
+import type { StatsSnapshot } from "../stats/stats-snapshot"
 
 export type Achievement = {
   id: string

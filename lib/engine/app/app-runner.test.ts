@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest"
-import { MemoryMinionFileSystem } from "@lib/engine/fs/memory-file-system"
-import { MemoryMinionProcessRunner } from "@lib/engine/process/memory-process-runner"
-import { resolveMinionPaths } from "@lib/engine/app/app-paths"
-import { type MinionAppEvent, MinionAppRunner } from "@lib/engine/app/app-runner"
+import { MemoryMinionFileSystem } from "../fs/memory-file-system"
+import { MemoryMinionProcessRunner } from "../process/memory-process-runner"
+import { resolveMinionPaths } from "./app-paths"
+import { type MinionAppEvent, MinionAppRunner } from "./app-runner"
 
 function setup(files: Record<string, string> = {}) {
   const fs = new MemoryMinionFileSystem({

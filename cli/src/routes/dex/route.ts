@@ -1,8 +1,8 @@
 import { z } from "zod"
-import { factory } from "@/factory"
-import { bodyValidator } from "@/lib/body-validator"
-import { helpGuard } from "@/lib/help-guard"
-import type { MinionRarity } from "@lib/engine/collection/species"
+import { factory } from "../../factory"
+import { bodyValidator } from "../../lib/body-validator"
+import { helpGuard } from "../../lib/help-guard"
+import type { MinionRarity } from "../../../../lib/engine/collection/species"
 
 const schema = z.strictObject({})
 

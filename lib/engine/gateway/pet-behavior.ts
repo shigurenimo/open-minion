@@ -1,5 +1,5 @@
-import type { MinionRandomSource } from "@lib/engine/random/random-source"
-import type { SessionInfo } from "@lib/engine/gateway/sessions"
+import type { MinionRandomSource } from "../random/random-source"
+import type { SessionInfo } from "./sessions"
 
 export const IDLE_CLIP = 0
 

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
-import { MemoryMinionFileSystem } from "@lib/engine/fs/memory-file-system"
-import { migrateLegacyConfigFile, MinionConfigStore } from "@lib/engine/config/config-store"
+import { MemoryMinionFileSystem } from "../fs/memory-file-system"
+import { migrateLegacyConfigFile, MinionConfigStore } from "./config-store"
 
 function store(): MinionConfigStore {
   return new MinionConfigStore({ fs: new MemoryMinionFileSystem(), path: "/data/config.json" })

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest"
-import { MemoryMinionFileSystem } from "@lib/engine/fs/memory-file-system"
-import { SessionStatsTracker } from "@lib/engine/stats/session-stats-tracker"
-import type { SessionInfo } from "@lib/engine/gateway/sessions"
+import { MemoryMinionFileSystem } from "../fs/memory-file-system"
+import { SessionStatsTracker } from "./session-stats-tracker"
+import type { SessionInfo } from "../gateway/sessions"
 
 function must<T>(value: T | Error): T {
   if (value instanceof Error) throw value

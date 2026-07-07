@@ -1,9 +1,9 @@
 import { join } from "node:path"
 import { z } from "zod"
-import { safeJsonParse } from "@lib/engine/errors"
-import type { MinionFileSystem } from "@lib/engine/fs/file-system"
-import { JsonFileStore } from "@lib/engine/fs/json-file-store"
-import type { MinionClock } from "@lib/engine/time/clock"
+import { safeJsonParse } from "../errors"
+import type { MinionFileSystem } from "../fs/file-system"
+import { JsonFileStore } from "../fs/json-file-store"
+import type { MinionClock } from "../time/clock"
 
 const scanDataSchema = z.object({
   tokensTotal: z.number().catch(0),

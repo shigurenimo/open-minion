@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest"
-import { MemoryMinionFileSystem } from "@lib/engine/fs/memory-file-system"
-import { MinionCollectionStore } from "@lib/engine/collection/collection-store"
-import { MinionCollectionTracker } from "@lib/engine/collection/collection-tracker"
-import { timeBucketForHour } from "@lib/engine/stats/stats-snapshot"
-import type { StatsSnapshot } from "@lib/engine/stats/stats-snapshot"
+import { MemoryMinionFileSystem } from "../fs/memory-file-system"
+import { MinionCollectionStore } from "./collection-store"
+import { MinionCollectionTracker } from "./collection-tracker"
+import { timeBucketForHour } from "../stats/stats-snapshot"
+import type { StatsSnapshot } from "../stats/stats-snapshot"
 
 function must<T>(value: T | Error): T {
   if (value instanceof Error) throw value

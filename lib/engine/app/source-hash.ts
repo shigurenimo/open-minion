@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto"
 import { join } from "node:path"
-import type { MinionFileSystem } from "@lib/engine/fs/file-system"
+import type { MinionFileSystem } from "../fs/file-system"
 
 type Props = {
   fs: MinionFileSystem

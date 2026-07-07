@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest"
-import { MemoryMinionFileSystem } from "@lib/engine/fs/memory-file-system"
-import { MemoryMinionProcessRunner } from "@lib/engine/process/memory-process-runner"
-import { MemoryMinionClock } from "@lib/engine/time/memory-clock"
-import { readActiveSessions } from "@lib/engine/gateway/sessions"
+import { MemoryMinionFileSystem } from "../fs/memory-file-system"
+import { MemoryMinionProcessRunner } from "../process/memory-process-runner"
+import { MemoryMinionClock } from "../time/memory-clock"
+import { readActiveSessions } from "./sessions"
 
 const DIR = "/home/.claude/sessions"
 const PROJECTS_DIR = "/home/.claude/projects"

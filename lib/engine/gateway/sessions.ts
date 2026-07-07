@@ -1,9 +1,9 @@
 import { join } from "node:path"
 import { z } from "zod"
-import { safeJsonParse } from "@lib/engine/errors"
-import type { MinionFileSystem } from "@lib/engine/fs/file-system"
-import type { MinionProcessRunner } from "@lib/engine/process/process-runner"
-import type { MinionClock } from "@lib/engine/time/clock"
+import { safeJsonParse } from "../errors"
+import type { MinionFileSystem } from "../fs/file-system"
+import type { MinionProcessRunner } from "../process/process-runner"
+import type { MinionClock } from "../time/clock"
 
 const DEFAULT_STALE_MS = 8 * 60 * 1000
 const DEFAULT_TRANSCRIPT_ACTIVE_MS = 2 * 60 * 1000

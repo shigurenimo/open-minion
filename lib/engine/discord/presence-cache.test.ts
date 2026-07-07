@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { DiscordPresenceCache } from "@lib/engine/discord/presence-cache"
+import { DiscordPresenceCache } from "./presence-cache"
 
 const GUILD_ID = "g1"
 

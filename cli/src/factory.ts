@@ -1,5 +1,5 @@
 import { createFactory } from "hono/factory"
-import type { Minion } from "@lib/minion"
+import type { Minion } from "../../lib/minion"
 
 export type Env = {
   Bindings: {

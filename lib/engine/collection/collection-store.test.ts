@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
-import { MemoryMinionFileSystem } from "@lib/engine/fs/memory-file-system"
-import { MinionCollectionStore } from "@lib/engine/collection/collection-store"
+import { MemoryMinionFileSystem } from "../fs/memory-file-system"
+import { MinionCollectionStore } from "./collection-store"
 
 function store(): MinionCollectionStore {
   return new MinionCollectionStore({

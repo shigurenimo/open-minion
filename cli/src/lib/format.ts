@@ -2,7 +2,7 @@ import type {
   MinionAppStatus,
   MinionKillResult,
   MinionStartResult,
-} from "@lib/engine/app/app-runner"
+} from "../../../lib/engine/app/app-runner"
 
 // ライブラリは構造化された結果を返す。日本語の表示文字列への整形はCLIの責務。
 

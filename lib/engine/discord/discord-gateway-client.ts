@@ -1,6 +1,6 @@
-import { safeJsonParse } from "@lib/engine/errors"
-import type { MinionRandomSource } from "@lib/engine/random/random-source"
-import { DiscordPresenceCache, type DiscordPresence } from "@lib/engine/discord/presence-cache"
+import { safeJsonParse } from "../errors"
+import type { MinionRandomSource } from "../random/random-source"
+import { DiscordPresenceCache, type DiscordPresence } from "./presence-cache"
 import {
   GATEWAY_OPS,
   REQUIRED_INTENTS,
@@ -11,11 +11,8 @@ import {
   helloDataSchema,
   presenceUpdateDataSchema,
   readyDataSchema,
-} from "@lib/engine/discord/gateway-payloads"
-import type {
-  MinionWebSocketConnection,
-  MinionWebSocketFactory,
-} from "@lib/engine/discord/websocket-factory"
+} from "./gateway-payloads"
+import type { MinionWebSocketConnection, MinionWebSocketFactory } from "./websocket-factory"
 
 const DEFAULT_GATEWAY_URL = "wss://gateway.discord.gg"
 const GATEWAY_QUERY = "/?v=10&encoding=json"

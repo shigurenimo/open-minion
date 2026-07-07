@@ -1,9 +1,9 @@
 import { z } from "zod"
-import { safeJsonParse } from "@lib/engine/errors"
-import type { MinionFileSystem } from "@lib/engine/fs/file-system"
-import type { MinionProcessRunner } from "@lib/engine/process/process-runner"
-import type { MinionPaths } from "@lib/engine/app/app-paths"
-import { computeSourceHash } from "@lib/engine/app/source-hash"
+import { safeJsonParse } from "../errors"
+import type { MinionFileSystem } from "../fs/file-system"
+import type { MinionProcessRunner } from "../process/process-runner"
+import type { MinionPaths } from "./app-paths"
+import { computeSourceHash } from "./source-hash"
 
 export type MinionBuildKind = "debug" | "release"
 

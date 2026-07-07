@@ -1,4 +1,4 @@
-import { MinionClock } from "@lib/engine/time/clock"
+import { MinionClock } from "./clock"
 
 type Props = {
   start?: Date

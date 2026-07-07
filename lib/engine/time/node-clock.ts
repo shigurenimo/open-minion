@@ -1,4 +1,4 @@
-import { MinionClock } from "@lib/engine/time/clock"
+import { MinionClock } from "./clock"
 
 export class NodeMinionClock extends MinionClock {
   now(): Date {

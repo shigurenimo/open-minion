@@ -1,5 +1,5 @@
-import { isFullMoon, isNewMoon } from "@lib/engine/collection/moon"
-import type { StatsSnapshot } from "@lib/engine/stats/stats-snapshot"
+import { isFullMoon, isNewMoon } from "./moon"
+import type { StatsSnapshot } from "../stats/stats-snapshot"
 
 export type MinionRarity = "common" | "rare"
 

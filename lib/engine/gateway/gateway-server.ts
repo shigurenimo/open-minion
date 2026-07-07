@@ -1,10 +1,10 @@
 import type { Hono } from "hono"
-import { toError } from "@lib/engine/errors"
-import type { MinionClock } from "@lib/engine/time/clock"
-import type { MinionRandomSource } from "@lib/engine/random/random-source"
-import { buildGatewayRoutes } from "@lib/engine/gateway/gateway-routes"
-import { PetBehaviorEngine } from "@lib/engine/gateway/pet-behavior"
-import { mergePetSources, type PetSource } from "@lib/engine/gateway/pet-source"
+import { toError } from "../errors"
+import type { MinionClock } from "../time/clock"
+import type { MinionRandomSource } from "../random/random-source"
+import { buildGatewayRoutes } from "./gateway-routes"
+import { PetBehaviorEngine } from "./pet-behavior"
+import { mergePetSources, type PetSource } from "./pet-source"
 
 export const DEFAULT_GATEWAY_PORT = 4756
 const DEFAULT_TICK_MS = 250
