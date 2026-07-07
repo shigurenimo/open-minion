@@ -4,6 +4,7 @@ import {
   IDLE_CLIP,
   PetBehaviorEngine,
   pickAction,
+  pickGamingAction,
   pickSleepingAction,
 } from "@lib/engine/gateway/pet-behavior"
 import type { SessionInfo } from "@lib/engine/gateway/sessions"
@@ -30,6 +31,18 @@ describe("pickSleepingAction", () => {
   it("picks the last sitting pose near a roll of 100", () => {
     const action = pickSleepingAction(new MemoryMinionRandomSource({ values: [0.99] }))
     expect(action.clipIndex).toBe(10)
+  })
+})
+
+describe("pickGamingAction", () => {
+  it("picks the first sitting pose with its minimum duration when random always returns 0", () => {
+    const action = pickGamingAction(new MemoryMinionRandomSource({ values: [0] }))
+    expect(action).toEqual({ clipIndex: 7, durationMs: 5000 })
+  })
+
+  it("picks the last eating clip near a roll of 100", () => {
+    const action = pickGamingAction(new MemoryMinionRandomSource({ values: [0.99] }))
+    expect(action.clipIndex).toBe(12)
   })
 })
 
@@ -115,6 +128,44 @@ describe("PetBehaviorEngine", () => {
     expect(elapsed).toBe(true)
     expect(engine.snapshot()[0]?.clipIndex).toBe(7)
     expect(engine.snapshot()[0]?.state).toBe("sleeping")
+  })
+
+  it("keeps state 'running' but marks activity while a session is gaming", () => {
+    const engine = new PetBehaviorEngine({ random: new MemoryMinionRandomSource({ values: [0] }) })
+
+    engine.tick(1000, sessions({ a: { running: true, name: "friend", activity: "gaming" } }))
+
+    expect(engine.snapshot()).toEqual([
+      { id: "a", state: "running", clipIndex: 7, name: "friend", activity: "gaming" },
+    ])
+  })
+
+  it("re-picks an action immediately when gaming starts or stops", () => {
+    const engine = new PetBehaviorEngine({ random: new MemoryMinionRandomSource({ values: [0] }) })
+    engine.tick(1000, sessions({ a: { running: true, name: "friend" } }))
+    expect(engine.snapshot()[0]?.clipIndex).toBe(0)
+
+    const startedGaming = engine.tick(
+      1100,
+      sessions({ a: { running: true, name: "friend", activity: "gaming" } }),
+    )
+    expect(startedGaming).toBe(true)
+    expect(engine.snapshot()[0]?.clipIndex).toBe(7)
+    expect(engine.snapshot()[0]?.activity).toBe("gaming")
+
+    const stoppedGaming = engine.tick(1200, sessions({ a: { running: true, name: "friend" } }))
+    expect(stoppedGaming).toBe(true)
+    expect(engine.snapshot()[0]?.activity).toBeUndefined()
+  })
+
+  it("ignores a gaming activity on a session that is not running", () => {
+    const engine = new PetBehaviorEngine({ random: new MemoryMinionRandomSource({ values: [0] }) })
+
+    engine.tick(1000, sessions({ a: { running: false, name: "friend", activity: "gaming" } }))
+
+    expect(engine.snapshot()).toEqual([
+      { id: "a", state: "sleeping", clipIndex: IDLE_CLIP, name: "friend" },
+    ])
   })
 
   it("is not dirty on a steady-state tick with no changes", () => {

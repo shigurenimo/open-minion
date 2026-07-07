@@ -6,9 +6,13 @@ import type { MinionClock } from "@lib/engine/time/clock"
 import type { MinionRandomSource } from "@lib/engine/random/random-source"
 import { buildGatewayRoutes } from "@lib/engine/gateway/gateway-routes"
 import { PetBehaviorEngine } from "@lib/engine/gateway/pet-behavior"
-import { readActiveSessions } from "@lib/engine/gateway/sessions"
+import {
+  ClaudeSessionsPetSource,
+  mergePetSources,
+  type PetSource,
+} from "@lib/engine/gateway/pet-source"
 
-const DEFAULT_PORT = 4756
+export const DEFAULT_GATEWAY_PORT = 4756
 const DEFAULT_TICK_MS = 250
 
 type Props = {
@@ -18,6 +22,8 @@ type Props = {
   random: MinionRandomSource
   sessionsDir: string
   projectsDir: string
+  /** Extra pet sources merged with the Claude Code sessions source on every tick (e.g. Discord presence). */
+  extraSources?: PetSource[]
   port?: number
   tickMs?: number
 }
@@ -39,22 +45,25 @@ export type MinionGatewayHandle = {
 export class MinionGatewayServer {
   readonly routes: Hono
 
-  private readonly fs: MinionFileSystem
-  private readonly process: MinionProcessRunner
   private readonly clock: MinionClock
-  private readonly sessionsDir: string
-  private readonly projectsDir: string
+  private readonly sources: PetSource[]
   private readonly port: number
   private readonly tickMs: number
   private readonly engine: PetBehaviorEngine
 
   constructor(props: Props) {
-    this.fs = props.fs
-    this.process = props.process
     this.clock = props.clock
-    this.sessionsDir = props.sessionsDir
-    this.projectsDir = props.projectsDir
-    this.port = props.port ?? DEFAULT_PORT
+    this.sources = [
+      new ClaudeSessionsPetSource({
+        fs: props.fs,
+        process: props.process,
+        clock: props.clock,
+        sessionsDir: props.sessionsDir,
+        projectsDir: props.projectsDir,
+      }),
+      ...(props.extraSources ?? []),
+    ]
+    this.port = props.port ?? DEFAULT_GATEWAY_PORT
     this.tickMs = props.tickMs ?? DEFAULT_TICK_MS
     this.engine = new PetBehaviorEngine({ random: props.random })
     this.routes = buildGatewayRoutes(this.engine)
@@ -73,16 +82,10 @@ export class MinionGatewayServer {
 
     const tick = (): void => {
       const now = this.clock.millis()
-      const activeSessions = readActiveSessions({
-        fs: this.fs,
-        process: this.process,
-        clock: this.clock,
-        sessionsDir: this.sessionsDir,
-        projectsDir: this.projectsDir,
-      })
-      if (engine.tick(now, activeSessions)) broadcast()
+      if (engine.tick(now, mergePetSources(this.sources))) broadcast()
     }
 
+    for (const source of this.sources) source.start()
     const interval = setInterval(tick, this.tickMs)
     tick()
 
@@ -115,11 +118,13 @@ export class MinionGatewayServer {
         port: server.port ?? this.port,
         stop: () => {
           clearInterval(interval)
+          for (const source of this.sources) source.stop()
           void server.stop(true)
         },
       }
     } catch (thrown) {
       clearInterval(interval)
+      for (const source of this.sources) source.stop()
       return toError(thrown)
     }
   }

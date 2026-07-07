@@ -28,10 +28,17 @@ export * from "@lib/engine/config/config-store"
 
 // Gateway — session watching + pet behavior + the in-process HTTP/WS server
 export * from "@lib/engine/gateway/sessions"
+export * from "@lib/engine/gateway/pet-source"
 export * from "@lib/engine/gateway/pet-behavior"
 export * from "@lib/engine/gateway/gateway-routes"
 export * from "@lib/engine/gateway/gateway-server"
 export * from "@lib/engine/gateway/resolve-daemon-script"
+
+// Discord — friend presence as a pet source (bot in a shared guild, GUILD_PRESENCES intent)
+export * from "@lib/engine/discord/gateway-payloads"
+export * from "@lib/engine/discord/presence-cache"
+export * from "@lib/engine/discord/discord-gateway-client"
+export * from "@lib/engine/discord/discord-pet-source"
 
 // Stats — session/token tracking feeding achievement + minion-species conditions
 export * from "@lib/engine/stats/stats-snapshot"
@@ -63,3 +70,7 @@ export * from "@lib/engine/time/memory-clock"
 export * from "@lib/engine/random/random-source"
 export * from "@lib/engine/random/node-random-source"
 export * from "@lib/engine/random/memory-random-source"
+
+export * from "@lib/engine/discord/websocket-factory"
+export * from "@lib/engine/discord/node-websocket-factory"
+export * from "@lib/engine/discord/memory-websocket-factory"

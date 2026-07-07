@@ -1,0 +1,16 @@
+{
+  "name": "open-minion-electron",
+  "version": "0.1.0",
+  "private": true,
+  "description": "open-minion の Windows 用オーバーレイクライアント (gateway の ws://127.0.0.1:4756/ws を描画する)",
+  "main": "dist/main.js",
+  "scripts": {
+    "build": "node scripts/copy-assets.mjs && tsc",
+    "prestart": "npm run build",
+    "start": "electron ."
+  },
+  "devDependencies": {
+    "electron": "^35.0.0",
+    "typescript": "^5.8.0"
+  }
+}

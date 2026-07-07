@@ -30,6 +30,8 @@ export type SessionInfo = {
   name: string
   /** The session's working directory, when Claude Code recorded one — used to count distinct projects worked in. */
   cwd?: string
+  /** Set when the subject is doing something more specific than "busy" — e.g. a Discord friend playing a game. */
+  activity?: "gaming"
 }
 
 type Props = {
