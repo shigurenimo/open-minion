@@ -50,7 +50,7 @@ export class ClaudeSessionsPetSource extends PetSource {
 }
 
 /** Reads every source and merges the results. Sources own distinct id namespaces, so later sources winning a collision is a non-event in practice. */
-export function mergePetSources(sources: PetSource[]): Map<string, SessionInfo> {
+export function mergePetSources(sources: readonly PetSource[]): Map<string, SessionInfo> {
   const merged = new Map<string, SessionInfo>()
   for (const source of sources) {
     for (const [id, info] of source.read()) merged.set(id, info)

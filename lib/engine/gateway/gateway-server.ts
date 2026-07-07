@@ -1,29 +1,24 @@
 import type { Hono } from "hono"
 import { toError } from "@lib/engine/errors"
-import type { MinionFileSystem } from "@lib/engine/fs/file-system"
-import type { MinionProcessRunner } from "@lib/engine/process/process-runner"
 import type { MinionClock } from "@lib/engine/time/clock"
 import type { MinionRandomSource } from "@lib/engine/random/random-source"
 import { buildGatewayRoutes } from "@lib/engine/gateway/gateway-routes"
 import { PetBehaviorEngine } from "@lib/engine/gateway/pet-behavior"
-import {
-  ClaudeSessionsPetSource,
-  mergePetSources,
-  type PetSource,
-} from "@lib/engine/gateway/pet-source"
+import { mergePetSources, type PetSource } from "@lib/engine/gateway/pet-source"
 
 export const DEFAULT_GATEWAY_PORT = 4756
 const DEFAULT_TICK_MS = 250
 
 type Props = {
-  fs: MinionFileSystem
-  process: MinionProcessRunner
   clock: MinionClock
   random: MinionRandomSource
-  sessionsDir: string
-  projectsDir: string
-  /** Extra pet sources merged with the Claude Code sessions source on every tick (e.g. Discord presence). */
-  extraSources?: PetSource[]
+  /**
+   * Pet feeds merged on every tick. The gateway has no built-in source —
+   * the `Minion` facade assembles the default set (Claude Code sessions,
+   * Discord presence) from config, and any `PetSource` implementation can
+   * be injected here instead.
+   */
+  sources: PetSource[]
   port?: number
   tickMs?: number
 }
@@ -44,25 +39,17 @@ export type MinionGatewayHandle = {
  */
 export class MinionGatewayServer {
   readonly routes: Hono
+  /** The injected pet feeds, in merge order — later sources win id collisions. */
+  readonly sources: readonly PetSource[]
 
   private readonly clock: MinionClock
-  private readonly sources: PetSource[]
   private readonly port: number
   private readonly tickMs: number
   private readonly engine: PetBehaviorEngine
 
   constructor(props: Props) {
     this.clock = props.clock
-    this.sources = [
-      new ClaudeSessionsPetSource({
-        fs: props.fs,
-        process: props.process,
-        clock: props.clock,
-        sessionsDir: props.sessionsDir,
-        projectsDir: props.projectsDir,
-      }),
-      ...(props.extraSources ?? []),
-    ]
+    this.sources = [...props.sources]
     this.port = props.port ?? DEFAULT_GATEWAY_PORT
     this.tickMs = props.tickMs ?? DEFAULT_TICK_MS
     this.engine = new PetBehaviorEngine({ random: props.random })

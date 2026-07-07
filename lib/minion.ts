@@ -25,7 +25,7 @@ import { DiscordPetSource } from "@lib/engine/discord/discord-pet-source"
 import { MemoryMinionWebSocketFactory } from "@lib/engine/discord/memory-websocket-factory"
 import { NodeMinionWebSocketFactory } from "@lib/engine/discord/node-websocket-factory"
 import type { MinionWebSocketFactory } from "@lib/engine/discord/websocket-factory"
-import type { PetSource } from "@lib/engine/gateway/pet-source"
+import { ClaudeSessionsPetSource, type PetSource } from "@lib/engine/gateway/pet-source"
 import { MinionGatewayServer } from "@lib/engine/gateway/gateway-server"
 import { resolveGatewayDaemonScript } from "@lib/engine/gateway/resolve-daemon-script"
 import { SessionStatsTracker } from "@lib/engine/stats/session-stats-tracker"
@@ -63,6 +63,13 @@ export type MinionOptions = {
   species?: MinionSpecies[]
   /** Achievement catalog for `minion.collection`. Defaults to `DEFAULT_ACHIEVEMENTS` — pass your own to replace it entirely. */
   achievements?: Achievement[]
+  /**
+   * Extra pet feeds merged after the built-in ones (Claude Code sessions,
+   * Discord presence) on every gateway tick. Combine with
+   * `claude.enabled=false` / `discord.enabled=false` in config to replace
+   * the built-ins entirely.
+   */
+  petSources?: PetSource[]
   /** Progress events from `minion.app` (build started, ...). Defaults to a no-op — the library never writes to stdout itself. */
   onEvent?: (event: MinionAppEvent) => void
 }
@@ -103,6 +110,7 @@ export class Minion {
   private readonly webSockets: MinionWebSocketFactory
   private readonly sessionsDir: string
   private readonly projectsDir: string
+  private readonly extraPetSources: readonly PetSource[]
 
   constructor(props: MinionOptions = {}) {
     const packageRoot = props.packageRoot ?? defaultPackageRoot()
@@ -119,6 +127,7 @@ export class Minion {
     this.webSockets = props.webSockets ?? new NodeMinionWebSocketFactory()
     this.sessionsDir = props.sessionsDir ?? join(homedir(), ".claude", "sessions")
     this.projectsDir = projectsDir
+    this.extraPetSources = props.petSources ?? []
 
     this.paths = resolveMinionPaths({
       packageRoot,
@@ -191,30 +200,42 @@ export class Minion {
   }
 
   /**
-   * In-process gateway server (HTTP + WebSocket) that watches the sessions
-   * directory and drives the pet's animation state. The daemon spawned by
-   * `app.start()` runs this same class out-of-process via `gateway-daemon.ts`.
+   * In-process gateway server (HTTP + WebSocket) that merges every pet source
+   * and drives the pet's animation state. The daemon spawned by `app.start()`
+   * runs this same class out-of-process via `gateway-daemon.ts`.
    *
-   * When `discord.token` and `discord.guildId` are both set in the config, a
-   * Discord presence source is wired in automatically: friends in that guild
-   * appear as extra pets (`discord:<userId>`) that run while online and sleep
-   * while offline.
+   * Sources are assembled from config at call time:
+   * - Claude Code sessions — on by default, off with `claude.enabled=false`
+   * - Discord presence — on when `discord.token` + `discord.guildId` are both
+   *   set, off with `discord.enabled=false`. Friends in that guild appear as
+   *   extra pets (`discord:<userId>`) while they are online.
+   * - anything passed via `MinionOptions.petSources`, appended last
    */
   gatewayServer(options: MinionGatewayServerOptions = {}): MinionGatewayServer {
     return new MinionGatewayServer({
-      fs: this.fs,
-      process: this.process,
       clock: this.clock,
       random: this.random,
-      sessionsDir: this.sessionsDir,
-      projectsDir: this.projectsDir,
-      extraSources: this.discordPetSources(),
+      sources: [...this.claudePetSources(), ...this.discordPetSources(), ...this.extraPetSources],
       port: options.port,
       tickMs: options.tickMs,
     })
   }
 
+  private claudePetSources(): PetSource[] {
+    if (this.config.get("claude.enabled") === "false") return []
+    return [
+      new ClaudeSessionsPetSource({
+        fs: this.fs,
+        process: this.process,
+        clock: this.clock,
+        sessionsDir: this.sessionsDir,
+        projectsDir: this.projectsDir,
+      }),
+    ]
+  }
+
   private discordPetSources(): PetSource[] {
+    if (this.config.get("discord.enabled") === "false") return []
     const token = this.config.get("discord.token")
     const guildId = this.config.get("discord.guildId")
     if (token === undefined || token === "" || guildId === undefined || guildId === "") return []

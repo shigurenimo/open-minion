@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest"
 import { MemoryMinionFileSystem } from "@lib/engine/fs/memory-file-system"
 import { MemoryMinionProcessRunner } from "@lib/engine/process/memory-process-runner"
 import { MemoryMinionClock } from "@lib/engine/time/memory-clock"
+import { ClaudeSessionsPetSource, PetSource } from "@lib/engine/gateway/pet-source"
+import type { SessionInfo } from "@lib/engine/gateway/sessions"
 import { Minion } from "@lib/minion"
 
 function must<T>(value: T | Error): T {
@@ -114,5 +116,60 @@ describe("Minion.inMemory", () => {
     expect(evaluation.species.id).toBe("custom")
     expect(evaluation.species.asset).toBe("sprites/custom.png")
     expect(minion.collection.dex().achievements.map((a) => a.id)).toEqual(["custom-achievement"])
+  })
+})
+
+describe("Minion.gatewayServer source assembly", () => {
+  class EmptyPetSource extends PetSource {
+    read(): Map<string, SessionInfo> {
+      return new Map()
+    }
+  }
+
+  function sourceKinds(minion: Minion): string[] {
+    return minion.gatewayServer().sources.map((source) => source.constructor.name)
+  }
+
+  it("serves Claude Code sessions by default", () => {
+    expect(sourceKinds(Minion.inMemory())).toEqual(["ClaudeSessionsPetSource"])
+  })
+
+  it("drops the Claude source when claude.enabled=false", () => {
+    const minion = Minion.inMemory()
+    minion.config.set("claude.enabled", "false")
+    expect(sourceKinds(minion)).toEqual([])
+  })
+
+  it("adds the Discord source once discord.token + discord.guildId are set", () => {
+    const minion = Minion.inMemory()
+    minion.config.set("discord.token", "t")
+    minion.config.set("discord.guildId", "g")
+    expect(sourceKinds(minion)).toEqual(["ClaudeSessionsPetSource", "DiscordPetSource"])
+  })
+
+  it("drops the Discord source when discord.enabled=false, even if configured", () => {
+    const minion = Minion.inMemory()
+    minion.config.set("discord.token", "t")
+    minion.config.set("discord.guildId", "g")
+    minion.config.set("discord.enabled", "false")
+    expect(sourceKinds(minion)).toEqual(["ClaudeSessionsPetSource"])
+  })
+
+  it("appends custom petSources after the built-ins", () => {
+    const custom = new EmptyPetSource()
+    const minion = Minion.inMemory({ petSources: [custom] })
+    const sources = minion.gatewayServer().sources
+    expect(sources[0]).toBeInstanceOf(ClaudeSessionsPetSource)
+    expect(sources[1]).toBe(custom)
+  })
+
+  it("can run entirely on custom sources with every built-in disabled", () => {
+    const custom = new EmptyPetSource()
+    const minion = Minion.inMemory({ petSources: [custom] })
+    minion.config.set("claude.enabled", "false")
+    minion.config.set("discord.token", "t")
+    minion.config.set("discord.guildId", "g")
+    minion.config.set("discord.enabled", "false")
+    expect(minion.gatewayServer().sources).toEqual([custom])
   })
 })
