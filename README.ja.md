@@ -59,7 +59,12 @@ npm start
 | `minion config list / get / set` | 設定の一覧・取得・書き込み                         |
 | `minion dev`                     | デバッグビルドで起動し直す(macOS)                  |
 
-どのコマンドも `-h` を付けると詳しい説明が出ます。状態は `~/.minion` に保存されます。
+どのコマンドも `-h` を付けると詳しい説明が出ます。設定は
+`~/.config/minion/config.json`、実行時状態は `~/.minion` に保存されます。
+
+ペットの供給元は設定でオン・オフできます。`minion config set claude.enabled false`
+で Claude Code セッションのペットを止め(デフォルトは有効)、
+`minion config set discord.enabled false` で Discord 連携を設定を残したまま止めます。
 
 グローバルインストールしていない場合は、`minion` の部分を
 `bun cli/src/index.ts` に読み替えてください(例: `bun cli/src/index.ts status`)。

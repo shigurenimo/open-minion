@@ -44,7 +44,13 @@ minion
 | `minion config list / get / set` | Tweak settings.                          |
 | `minion dev`                     | Restart with a debug build.              |
 
-Add `-h` to any command for details. State lives in `~/.minion`.
+Add `-h` to any command for details. Config lives in `~/.config/minion/config.json`,
+runtime state in `~/.minion`.
+
+Pet sources can be toggled per config: `minion config set claude.enabled false`
+stops mirroring Claude Code sessions (on by default), and
+`minion config set discord.enabled false` pauses the Discord source without
+losing its settings.
 
 ## Discord friends as pets
 
@@ -120,6 +126,43 @@ const custom = new Minion({
 
 // Sandbox: no real disk, processes, or clock.
 const sandbox = Minion.inMemory()
+```
+
+### Compose your own pieces
+
+The renderers (swift/, electron/), the pet sources (Claude Code, Discord), and
+the library itself are deliberately decoupled. Subpath entries let you import
+one area without bundling the rest:
+
+```ts
+import { PetSource, MinionGatewayServer } from "@shigureni/minion/gateway"
+import type { SessionInfo } from "@shigureni/minion/gateway"
+
+// Any feed can be a pet: implement read() and hand it to the facade.
+class BuildBotSource extends PetSource {
+  read(): Map<string, SessionInfo> {
+    return new Map([["ci:main", { running: true, name: "CI" }]])
+  }
+}
+
+const minion = new Minion({ petSources: [new BuildBotSource()] })
+```
+
+Entry points: `/gateway` (PetSource, behavior engine, WS server + snapshot
+protocol), `/discord`, `/app`, `/stats`, `/collection`, `/config`,
+`/boundaries` (fs/process/clock/random/ws + Node/Memory impls), and `/cli`.
+
+The CLI is assemblable too — the published bin is one function call:
+
+```ts
+import { createMinionApp, DEFAULT_COMMANDS, runMinionCli } from "@shigureni/minion/cli"
+
+await runMinionCli({
+  minion,
+  app: createMinionApp({
+    commands: [...DEFAULT_COMMANDS, { path: "/party", handlers: party }],
+  }),
+})
 ```
 
 See `lib/index.ts` for the full API surface.

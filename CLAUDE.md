@@ -11,28 +11,39 @@ Desktop pet that reacts to Claude Code sessions and Discord friend presence. Fou
 
 ```sh
 bun run check   # fmt + lint + type-check (vite-plus) — run before finishing
+                # (electron/ is excluded: it has its own tsconfig + node_modules)
 bun run test    # vitest
 bun run fmt     # auto-fix formatting — run after editing
 ```
 
-Path aliases: `@/*` → `cli/src/*`, `@lib/*` → `lib/*` (tsconfig.json + vite.config.ts).
+Imports are plain relative paths (no aliases) — the published TS source must
+resolve under any toolchain, not just Bun.
 
 ## lib/ — the library
 
-Public surface is `lib/index.ts`. The `Minion` facade (`lib/minion.ts`) wires every
-facet at construction time and freezes itself; `Minion.inMemory()` returns a fully
-sandboxed instance (memory FS/process/clock/random, `/sandbox/*` paths).
+Public surface is `lib/index.ts` (batteries-included) plus one subpath entry per
+area — `lib/gateway.ts` / `discord` / `app` / `stats` / `collection` / `config` /
+`boundaries`, each a separate module graph mapped in package.json `exports` so
+consumers can import one area without bundling the rest. A new module must be
+re-exported from its area entry (index.ts re-exports the entries). The `Minion`
+facade (`lib/minion.ts`) wires every facet at construction time and freezes
+itself; `Minion.inMemory()` returns a fully sandboxed instance (memory
+FS/process/clock/random/ws/fetch, `/sandbox/*` paths).
 
 Every IO boundary follows one pattern (mirroring ~/open-claude-funnel): an abstract
 class plus a `Node*` (real) and a `Memory*` (test double) implementation:
 
 - `MinionFileSystem` (fs), `MinionProcessRunner` (process), `MinionClock` (time),
-  `MinionRandomSource` (random), `MinionWebSocketFactory` (ws client, `engine/discord/`)
+  `MinionRandomSource` (random), `MinionWebSocketFactory` (ws client, `engine/discord/`);
+  plus `MinionFetch` (a plain function prop, no class trio) for the one HTTP probe
+  (`Minion.gatewaySnapshot()` → `gateway-probe.ts`)
 
 Domain code never calls `node:fs` / `Bun.spawn` / `Date.now()` / `Math.random()`
-directly — boundaries arrive via constructor props. Persisted JSON state (all under
-`~/.minion`) goes through `JsonFileStore<T>`, which validates reads against a
-required zod schema.
+directly — boundaries arrive via constructor props. Persisted JSON state goes
+through `JsonFileStore<T>`, which validates reads against a required zod schema.
+Config lives at `$XDG_CONFIG_HOME/minion/config.json` (default `~/.config/minion`,
+one-time migration copies the pre-0.5 `~/.minion/config.json`); runtime state
+(pids, build output, stats) stays under `~/.minion` (see `app-paths.ts`).
 
 **Errors are values, not exceptions.** Nothing in `lib/` throws: fallible
 operations return `T | Error`, checked with `instanceof Error`. The boundary
@@ -49,12 +60,16 @@ Engine subdirectories:
 - `engine/gateway` — session watching (`readActiveSessions`), the `PetSource`
   abstraction merging pet feeds (`pet-source.ts`), the pure pet state
   machine (`PetBehaviorEngine`), Hono routes, the `Bun.serve` wrapper
-  (`MinionGatewayServer`), and the detached daemon entry (`gateway-daemon.ts`)
+  (`MinionGatewayServer` — source-injected: it builds nothing itself, the
+  facade assembles `sources` from config + `MinionOptions.petSources`),
+  the HTTP probe of a running gateway (`gateway-probe.ts`), and the
+  detached daemon entry (`gateway-daemon.ts`)
 - `engine/discord` — friend presence as a `PetSource`: raw Discord Gateway WS
   client (`DiscordGatewayClient`, no discord.js), pure event-application cache
   (`DiscordPresenceCache`), and the `MinionWebSocketFactory` boundary. Enabled
-  automatically when `discord.token` + `discord.guildId` exist in config.
-  Setup + protocol notes in `.docs/discord.md`.
+  automatically when `discord.token` + `discord.guildId` exist in config;
+  `discord.enabled=false` pauses it, `claude.enabled=false` likewise disables
+  the Claude sessions source. Setup + protocol notes in `.docs/discord.md`.
 - `engine/stats` — `SessionStatsTracker` (lifetime/concurrency/streak/projects),
   `TokenUsageTracker` (incremental transcript scan), `MinionStatsCollector`
   combining both into a `StatsSnapshot`
@@ -64,9 +79,14 @@ Engine subdirectories:
 ## cli/
 
 One file per command: `cli/src/routes/<command>/route.ts` (hono-routed, mirrors
-jobantenna-cli). Handlers only call `c.env.minion`. Adding a command means: route
-file → wire into `cli/src/app.ts` → HELP text in `cli/src/index.ts` → usage line in
-`routes/not-found.ts`. CLI output text is Japanese; keep it that way.
+jobantenna-cli). Handlers only call `c.env.minion`. The app is assembled from a
+command table (`DEFAULT_COMMANDS` + `createMinionApp()` in `cli/src/app.ts`) and
+run by `runMinionCli()` (`cli/src/run.ts`); the bin (`cli/src/index.ts`) is just
+`runMinionCli()` with defaults, and `@shigureni/minion/cli` (`cli/src/cli.ts`)
+exposes the whole assembly surface to consumers. Adding a command means: route
+file → entry in `DEFAULT_COMMANDS` → `DEFAULT_HELP` in `cli/src/run.ts` →
+`DEFAULT_USAGE` in `routes/not-found.ts` → re-export check in `cli/src/cli.ts`.
+CLI output text is Japanese; keep it that way.
 
 ## Constraints & gotchas
 
