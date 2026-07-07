@@ -20,6 +20,12 @@ import type { Achievement } from "@lib/engine/collection/achievements"
 import { MinionCollectionStore } from "@lib/engine/collection/collection-store"
 import { MinionCollectionTracker } from "@lib/engine/collection/collection-tracker"
 import type { MinionSpecies } from "@lib/engine/collection/species"
+import { DiscordGatewayClient } from "@lib/engine/discord/discord-gateway-client"
+import { DiscordPetSource } from "@lib/engine/discord/discord-pet-source"
+import { MemoryMinionWebSocketFactory } from "@lib/engine/discord/memory-websocket-factory"
+import { NodeMinionWebSocketFactory } from "@lib/engine/discord/node-websocket-factory"
+import type { MinionWebSocketFactory } from "@lib/engine/discord/websocket-factory"
+import type { PetSource } from "@lib/engine/gateway/pet-source"
 import { MinionGatewayServer } from "@lib/engine/gateway/gateway-server"
 import { resolveGatewayDaemonScript } from "@lib/engine/gateway/resolve-daemon-script"
 import { SessionStatsTracker } from "@lib/engine/stats/session-stats-tracker"
@@ -40,6 +46,8 @@ export type MinionOptions = {
   clock?: MinionClock
   /** Randomness used by the pet behavior picker. */
   random?: MinionRandomSource
+  /** WebSocket-client boundary used by the Discord presence source. Replace with MemoryMinionWebSocketFactory to sandbox network I/O. */
+  webSockets?: MinionWebSocketFactory
   /** Directory containing `swift/` (the package root). Defaults to the installed package root. */
   packageRoot?: string
   /** State directory (pid files, config, build output). Defaults to `~/.minion`. */
@@ -89,6 +97,7 @@ export class Minion {
   private readonly process: MinionProcessRunner
   private readonly clock: MinionClock
   private readonly random: MinionRandomSource
+  private readonly webSockets: MinionWebSocketFactory
   private readonly sessionsDir: string
   private readonly projectsDir: string
 
@@ -104,6 +113,7 @@ export class Minion {
     this.process = processRunner
     this.clock = clock
     this.random = random
+    this.webSockets = props.webSockets ?? new NodeMinionWebSocketFactory()
     this.sessionsDir = props.sessionsDir ?? join(homedir(), ".claude", "sessions")
     this.projectsDir = projectsDir
 
@@ -162,6 +172,7 @@ export class Minion {
       process: props.process ?? new MemoryMinionProcessRunner(),
       clock,
       random: props.random ?? new MemoryMinionRandomSource(),
+      webSockets: props.webSockets ?? new MemoryMinionWebSocketFactory(),
       packageRoot: props.packageRoot ?? SANDBOX_PACKAGE_ROOT,
       dataDir: props.dataDir ?? SANDBOX_DATA_DIR,
       sessionsDir: props.sessionsDir ?? SANDBOX_SESSIONS_DIR,
@@ -173,6 +184,11 @@ export class Minion {
    * In-process gateway server (HTTP + WebSocket) that watches the sessions
    * directory and drives the pet's animation state. The daemon spawned by
    * `app.start()` runs this same class out-of-process via `gateway-daemon.ts`.
+   *
+   * When `discord.token` and `discord.guildId` are both set in the config, a
+   * Discord presence source is wired in automatically: friends in that guild
+   * appear as extra pets (`discord:<userId>`) that run while online and sleep
+   * while offline.
    */
   gatewayServer(options: MinionGatewayServerOptions = {}): MinionGatewayServer {
     return new MinionGatewayServer({
@@ -182,9 +198,30 @@ export class Minion {
       random: this.random,
       sessionsDir: this.sessionsDir,
       projectsDir: this.projectsDir,
+      extraSources: this.discordPetSources(),
       port: options.port,
       tickMs: options.tickMs,
     })
+  }
+
+  private discordPetSources(): PetSource[] {
+    const token = this.config.get("discord.token")
+    const guildId = this.config.get("discord.guildId")
+    if (token === undefined || token === "" || guildId === undefined || guildId === "") return []
+
+    const userIds = (this.config.get("discord.userIds") ?? "")
+      .split(",")
+      .map((id) => id.trim())
+      .filter((id) => id !== "")
+
+    const client = new DiscordGatewayClient({
+      token,
+      guildId,
+      webSockets: this.webSockets,
+      random: this.random,
+      userIds: userIds.length > 0 ? userIds : undefined,
+    })
+    return [new DiscordPetSource({ client })]
   }
 }
 

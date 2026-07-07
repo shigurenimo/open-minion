@@ -5,9 +5,11 @@ import configList from "@/routes/config/list/route"
 import configSet from "@/routes/config/set/[key]/[value]/route"
 import dev from "@/routes/dev/route"
 import dex from "@/routes/dex/route"
+import discordStatus from "@/routes/discord/status/route"
 import kill from "@/routes/kill/route"
 import { notFound } from "@/routes/not-found"
 import reboot from "@/routes/reboot/route"
+import serve from "@/routes/serve/route"
 import start from "@/routes/start/route"
 import status from "@/routes/status/route"
 
@@ -21,7 +23,9 @@ export const app = base
   .post("/dex", ...dex)
   .post("/kill", ...kill)
   .post("/reboot", ...reboot)
+  .post("/serve", ...serve)
   .post("/status", ...status)
+  .post("/discord/status", ...discordStatus)
   .post("/config/list", ...configList)
   .post("/config/get/:key", ...configGet)
   .post("/config/set/:key/:value", ...configSet)

@@ -1,8 +1,9 @@
 # CLAUDE.md
 
-Desktop pet for macOS that reacts to Claude Code sessions. Three parts:
+Desktop pet that reacts to Claude Code sessions and Discord friend presence. Four parts:
 
-- `swift/` — the overlay app (Swift Package) that draws the pet
+- `swift/` — the macOS overlay app (Swift Package) that draws the pet
+- `electron/` — the Windows overlay client (independent package, npm/Node — Electron's main process can't run under Bun)
 - `lib/` — the programmable API (`@shigureni/minion`); all business logic lives here
 - `cli/` — thin hono-routed CLI that consumes the `Minion` facade
 
@@ -26,7 +27,7 @@ Every IO boundary follows one pattern (mirroring ~/open-claude-funnel): an abstr
 class plus a `Node*` (real) and a `Memory*` (test double) implementation:
 
 - `MinionFileSystem` (fs), `MinionProcessRunner` (process), `MinionClock` (time),
-  `MinionRandomSource` (random)
+  `MinionRandomSource` (random), `MinionWebSocketFactory` (ws client, `engine/discord/`)
 
 Domain code never calls `node:fs` / `Bun.spawn` / `Date.now()` / `Math.random()`
 directly — boundaries arrive via constructor props. Persisted JSON state (all under
@@ -45,9 +46,15 @@ Engine subdirectories:
 
 - `engine/app` — Swift build/start/kill/status (`MinionAppRunner`), path resolution
   (`resolveMinionPaths`), source-hash-based build skipping
-- `engine/gateway` — session watching (`readActiveSessions`), the pure pet state
+- `engine/gateway` — session watching (`readActiveSessions`), the `PetSource`
+  abstraction merging pet feeds (`pet-source.ts`), the pure pet state
   machine (`PetBehaviorEngine`), Hono routes, the `Bun.serve` wrapper
   (`MinionGatewayServer`), and the detached daemon entry (`gateway-daemon.ts`)
+- `engine/discord` — friend presence as a `PetSource`: raw Discord Gateway WS
+  client (`DiscordGatewayClient`, no discord.js), pure event-application cache
+  (`DiscordPresenceCache`), and the `MinionWebSocketFactory` boundary. Enabled
+  automatically when `discord.token` + `discord.guildId` exist in config.
+  Setup + protocol notes in `.docs/discord.md`.
 - `engine/stats` — `SessionStatsTracker` (lifetime/concurrency/streak/projects),
   `TokenUsageTracker` (incremental transcript scan), `MinionStatsCollector`
   combining both into a `StatsSnapshot`
@@ -87,9 +94,13 @@ file → wire into `cli/src/app.ts` → HELP text in `cli/src/index.ts` → usag
   reads it, and the Swift app doesn't consume it yet. Both catalogs are documented
   in `.docs/` (species.md / achievements.md) — update those tables when a catalog
   changes.
-- **`ACTIONS` in `pet-behavior.ts` mirrors Swift.** Order and weights must match
-  `PetView.clips` in `swift/Sources/open-minion/`; only "which clip, how long" is
-  decided TS-side.
+- **`ACTIONS` in `pet-behavior.ts` mirrors every renderer — 3-way sync.** The clip
+  order must match `PetView.clips` in `swift/Sources/open-minion/` AND `CLIPS` in
+  `electron/src/renderer/clips.ts`; only "which clip, how long" is decided TS-side.
+- **Snapshot `state` stays binary.** `PetSnapshotEntry.state` is
+  `"running" | "sleeping"` — new nuances (e.g. a Discord friend gaming) ride on
+  optional fields like `activity?: "gaming"` so renderers that ignore unknown
+  fields (the Swift app) keep working. Don't add a third `state` value.
 - **Token scanning is incremental, and never reads old history.** Per-file
   mtime + consumed-line-count in `~/.minion/usage-scan.json`; an unseen file
   whose mtime is outside the 7-day backfill window is skipped entirely

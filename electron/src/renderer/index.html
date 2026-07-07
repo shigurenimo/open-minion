@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <title>open-minion</title>
+    <style>
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+        background: transparent;
+      }
+      #stage {
+        display: block;
+      }
+      #name-label {
+        position: fixed;
+        display: none;
+        padding: 3px 6px;
+        border-radius: 6px;
+        background: rgba(0, 0, 0, 0.75);
+        color: #fff;
+        font:
+          500 11px system-ui,
+          sans-serif;
+        white-space: nowrap;
+        pointer-events: none;
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="stage"></canvas>
+    <div id="name-label"></div>
+    <!-- CommonJS 出力なので <script src> 直読みではなく require で読む (exports が未定義になるため) -->
+    <script>
+      require("../../dist/renderer/renderer.js")
+    </script>
+  </body>
+</html>

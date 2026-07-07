@@ -24,8 +24,10 @@ Commands:
   dev                       停止してデバッグビルドで起動し直す
   kill                      停止する
   reboot                    停止してリリースビルドで起動し直す (デフォルト)
+  serve                     gateway を前面起動する (Windows など Swift アプリなし環境向け)
   status                    起動状況を表示する
   dex                       実績とミニオン図鑑を表示する
+  discord status            Discord 連携の設定状況を表示する
   config list               設定値を一覧表示する
   config get <key>          設定値を取得する
   config set <key> <value>  設定値を書き込む

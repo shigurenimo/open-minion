@@ -35,6 +35,21 @@ export const SLEEPING_ACTIONS: {
   { clipIndex: 10, weight: 15, durationMs: [6000, 12000] }, // 座る4
 ]
 
+// ゲーム中のフレンド用: 落ち着いて座り込み、ときどきおやつを食べる。
+// (clipIndexはACTIONS/Swiftの並びを指す)
+export const GAMING_ACTIONS: {
+  clipIndex: number
+  durationMs: [number, number]
+  weight: number
+}[] = [
+  { clipIndex: 7, weight: 22, durationMs: [5000, 10000] }, // 座る1
+  { clipIndex: 8, weight: 22, durationMs: [5000, 10000] }, // 座る2
+  { clipIndex: 9, weight: 22, durationMs: [5000, 10000] }, // 座る3
+  { clipIndex: 10, weight: 22, durationMs: [5000, 10000] }, // 座る4
+  { clipIndex: 11, weight: 6, durationMs: [2000, 3000] }, // 食べる1
+  { clipIndex: 12, weight: 6, durationMs: [2000, 3000] }, // 食べる2
+]
+
 export type PetAction = { clipIndex: number; durationMs: number }
 
 export function pickAction(random: MinionRandomSource): PetAction {
@@ -58,11 +73,22 @@ export function pickAction(random: MinionRandomSource): PetAction {
 }
 
 export function pickSleepingAction(random: MinionRandomSource): PetAction {
+  return pickFromSubset(random, SLEEPING_ACTIONS)
+}
+
+export function pickGamingAction(random: MinionRandomSource): PetAction {
+  return pickFromSubset(random, GAMING_ACTIONS)
+}
+
+function pickFromSubset(
+  random: MinionRandomSource,
+  actions: { clipIndex: number; durationMs: [number, number]; weight: number }[],
+): PetAction {
   const roll = random.next() * 100
   let cumulative = 0
-  let chosen = SLEEPING_ACTIONS[0]
+  let chosen = actions[0]
 
-  for (const action of SLEEPING_ACTIONS) {
+  for (const action of actions) {
     cumulative += action.weight
     if (roll < cumulative) {
       chosen = action
@@ -79,16 +105,21 @@ export function pickSleepingAction(random: MinionRandomSource): PetAction {
 
 export type PetBehavior = {
   running: boolean
+  gaming: boolean
   name: string
   clipIndex: number
   actionEndsAt: number
 }
 
+// `state` は2値のまま(既存Swiftクライアントの `state == "running"` 判定を壊さない)。
+// ゲーム中は running のまま optional な `activity` で伝える — 未知フィールドを
+// 無視するクライアントには従来どおりの running に見える。
 export type PetSnapshotEntry = {
   id: string
   state: "running" | "sleeping"
   clipIndex: number
   name: string
+  activity?: "gaming"
 }
 
 /**
@@ -116,12 +147,14 @@ export class PetBehaviorEngine {
     }
 
     for (const [id, info] of activeSessions) {
+      const gaming = info.running && info.activity === "gaming"
       const existing = this.behaviors.get(id)
 
       if (!existing) {
-        const action = info.running ? pickAction(this.random) : pickSleepingAction(this.random)
+        const action = this.pick(info.running, gaming)
         this.behaviors.set(id, {
           running: info.running,
+          gaming,
           name: info.name,
           clipIndex: action.clipIndex,
           actionEndsAt: now + action.durationMs,
@@ -135,15 +168,16 @@ export class PetBehaviorEngine {
         dirty = true
       }
 
-      if (existing.running !== info.running) {
+      if (existing.running !== info.running || existing.gaming !== gaming) {
         existing.running = info.running
-        // 稼働が止まったときも静かな姿勢を選び直す(走りの途中コマで固まらないように)。
-        const action = info.running ? pickAction(this.random) : pickSleepingAction(this.random)
+        existing.gaming = gaming
+        // 稼働が止まった/ゲームを始めたときも姿勢を選び直す(走りの途中コマで固まらないように)。
+        const action = this.pick(info.running, gaming)
         existing.clipIndex = action.clipIndex
         existing.actionEndsAt = now + action.durationMs
         dirty = true
       } else if (now >= existing.actionEndsAt) {
-        const action = info.running ? pickAction(this.random) : pickSleepingAction(this.random)
+        const action = this.pick(info.running, gaming)
         if (action.clipIndex !== existing.clipIndex) dirty = true
         existing.clipIndex = action.clipIndex
         existing.actionEndsAt = now + action.durationMs
@@ -156,9 +190,16 @@ export class PetBehaviorEngine {
   snapshot(): PetSnapshotEntry[] {
     return Array.from(this.behaviors.entries()).map(([id, b]) => ({
       id,
-      state: b.running ? "running" : "sleeping",
+      state: b.running ? ("running" as const) : ("sleeping" as const),
       clipIndex: b.clipIndex,
       name: b.name,
+      ...(b.gaming ? { activity: "gaming" as const } : {}),
     }))
+  }
+
+  private pick(running: boolean, gaming: boolean): PetAction {
+    if (!running) return pickSleepingAction(this.random)
+    if (gaming) return pickGamingAction(this.random)
+    return pickAction(this.random)
   }
 }

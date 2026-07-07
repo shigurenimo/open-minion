@@ -1,5 +1,7 @@
 # minion
 
+日本語ガイドは [README.ja.md](README.ja.md) へ。
+
 A tiny desktop pet that walks around your macOS screen and reacts to your
 [Claude Code](https://claude.com/claude-code) sessions — napping while you're
 idle, running around while Claude is busy working.
@@ -43,6 +45,27 @@ minion
 | `minion dev`                     | Restart with a debug build.              |
 
 Add `-h` to any command for details. State lives in `~/.minion`.
+
+## Discord friends as pets
+
+Point a small Discord bot at a private server you share with friends, and each
+member becomes a pet: running around while they're online, sleeping while
+offline, and settling down with a 🎮 while they play a game. Fully
+ToS-compliant — no self-bots, no friend-list API; it only sees members of that
+one server. Setup guide: [.docs/discord.md](.docs/discord.md), then check with
+`minion discord status`.
+
+## Windows
+
+The Swift overlay is macOS-only, but the gateway and the Discord source run
+anywhere Bun does. On Windows:
+
+```sh
+bun cli/src/index.ts serve      # runs the gateway in the foreground
+cd electron && npm install && npm start   # the Windows overlay client
+```
+
+See [electron/README.md](electron/README.md).
 
 ## The dex
 
