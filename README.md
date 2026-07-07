@@ -49,8 +49,9 @@ Add `-h` to any command for details. State lives in `~/.minion`.
 ## Discord friends as pets
 
 Point a small Discord bot at a private server you share with friends, and each
-member becomes a pet: running around while they're online, sleeping while
-offline, and settling down with a 🎮 while they play a game. Fully
+member becomes a pet: appearing and running around while they're online,
+settling down with a 🎮 while they play a game, and leaving the screen when
+they go offline. Fully
 ToS-compliant — no self-bots, no friend-list API; it only sees members of that
 one server. Setup guide: [.docs/discord.md](.docs/discord.md), then check with
 `minion discord status`.

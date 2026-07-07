@@ -220,6 +220,9 @@ export class DiscordGatewayClient {
     this.send(GATEWAY_OPS.identify, {
       token: this.token,
       intents: REQUIRED_INTENTS,
+      // デフォルト(50)だと 50 人超のギルドで GUILD_CREATE の members からオフライン
+      // メンバーが欠け、その人は後からオンラインになっても現れない。上限の 250 まで広げる。
+      large_threshold: 250,
       properties: { os: process.platform, browser: "open-minion", device: "open-minion" },
     })
   }
