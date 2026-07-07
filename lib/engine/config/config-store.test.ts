@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 import { MemoryMinionFileSystem } from "@lib/engine/fs/memory-file-system"
-import { MinionConfigStore } from "@lib/engine/config/config-store"
+import { migrateLegacyConfigFile, MinionConfigStore } from "@lib/engine/config/config-store"
 
 function store(): MinionConfigStore {
   return new MinionConfigStore({ fs: new MemoryMinionFileSystem(), path: "/data/config.json" })
@@ -49,5 +49,45 @@ describe("MinionConfigStore", () => {
     const fs = new MemoryMinionFileSystem({ files: { "/data/config.json": "not json" } })
     const config = new MinionConfigStore({ fs, path: "/data/config.json" })
     expect(config.list()).toEqual({})
+  })
+})
+
+describe("migrateLegacyConfigFile", () => {
+  const FROM = "/home/.minion/config.json"
+  const TO = "/home/.config/minion/config.json"
+
+  it("copies the legacy file to the new location, keeping the original", () => {
+    const fs = new MemoryMinionFileSystem({ files: { [FROM]: `{"a":"1"}` } })
+
+    expect(migrateLegacyConfigFile({ fs, from: FROM, to: TO })).toBeNull()
+
+    expect(fs.readFileSync(TO)).toBe(`{"a":"1"}`)
+    expect(fs.readFileSync(FROM)).toBe(`{"a":"1"}`)
+  })
+
+  it("never overwrites an existing file at the new location", () => {
+    const fs = new MemoryMinionFileSystem({
+      files: { [FROM]: `{"a":"old"}`, [TO]: `{"a":"new"}` },
+    })
+
+    expect(migrateLegacyConfigFile({ fs, from: FROM, to: TO })).toBeNull()
+
+    expect(fs.readFileSync(TO)).toBe(`{"a":"new"}`)
+  })
+
+  it("does nothing when there is no legacy file", () => {
+    const fs = new MemoryMinionFileSystem()
+
+    expect(migrateLegacyConfigFile({ fs, from: FROM, to: TO })).toBeNull()
+
+    expect(fs.existsSync(TO)).toBe(false)
+  })
+
+  it("does nothing when both paths are the same", () => {
+    const fs = new MemoryMinionFileSystem({ files: { [FROM]: `{"a":"1"}` } })
+
+    expect(migrateLegacyConfigFile({ fs, from: FROM, to: FROM })).toBeNull()
+
+    expect(fs.readFileSync(FROM)).toBe(`{"a":"1"}`)
   })
 })

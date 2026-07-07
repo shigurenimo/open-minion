@@ -15,7 +15,7 @@ import { MemoryMinionRandomSource } from "@lib/engine/random/memory-random-sourc
 import { NodeMinionRandomSource } from "@lib/engine/random/node-random-source"
 import { type MinionPaths, resolveMinionPaths } from "@lib/engine/app/app-paths"
 import { type MinionAppEvent, MinionAppRunner } from "@lib/engine/app/app-runner"
-import { MinionConfigStore } from "@lib/engine/config/config-store"
+import { migrateLegacyConfigFile, MinionConfigStore } from "@lib/engine/config/config-store"
 import type { Achievement } from "@lib/engine/collection/achievements"
 import { MinionCollectionStore } from "@lib/engine/collection/collection-store"
 import { MinionCollectionTracker } from "@lib/engine/collection/collection-tracker"
@@ -34,6 +34,7 @@ import { MinionStatsCollector } from "@lib/engine/stats/stats-collector"
 
 const SANDBOX_PACKAGE_ROOT = "/sandbox/pkg"
 const SANDBOX_DATA_DIR = "/sandbox/.minion"
+const SANDBOX_CONFIG_DIR = "/sandbox/.config/minion"
 const SANDBOX_SESSIONS_DIR = "/sandbox/.claude/sessions"
 const SANDBOX_PROJECTS_DIR = "/sandbox/.claude/projects"
 
@@ -50,8 +51,10 @@ export type MinionOptions = {
   webSockets?: MinionWebSocketFactory
   /** Directory containing `swift/` (the package root). Defaults to the installed package root. */
   packageRoot?: string
-  /** State directory (pid files, config, build output). Defaults to `~/.minion`. */
+  /** Runtime-state directory (pid files, build output, stats). Defaults to `~/.minion`. */
   dataDir?: string
+  /** Config directory (`config.json`). Defaults to `$XDG_CONFIG_HOME/minion`, i.e. `~/.config/minion`. */
+  configDir?: string
   /** Directory of Claude Code session files the gateway watches. Defaults to `~/.claude/sessions`. */
   sessionsDir?: string
   /** Claude Code's transcript root, scanned for token usage. Defaults to `~/.claude/projects`. */
@@ -117,8 +120,14 @@ export class Minion {
     this.sessionsDir = props.sessionsDir ?? join(homedir(), ".claude", "sessions")
     this.projectsDir = projectsDir
 
-    this.paths = resolveMinionPaths({ packageRoot, dataDir: props.dataDir })
+    this.paths = resolveMinionPaths({
+      packageRoot,
+      dataDir: props.dataDir,
+      configDir: props.configDir,
+    })
 
+    // 失敗しても致命ではない (config が空として読まれるだけ) ので、結果は握りつぶす。
+    migrateLegacyConfigFile({ fs, from: this.paths.legacyConfigFile, to: this.paths.configFile })
     this.config = new MinionConfigStore({ fs, path: this.paths.configFile })
 
     this.app = new MinionAppRunner({
@@ -175,6 +184,7 @@ export class Minion {
       webSockets: props.webSockets ?? new MemoryMinionWebSocketFactory(),
       packageRoot: props.packageRoot ?? SANDBOX_PACKAGE_ROOT,
       dataDir: props.dataDir ?? SANDBOX_DATA_DIR,
+      configDir: props.configDir ?? SANDBOX_CONFIG_DIR,
       sessionsDir: props.sessionsDir ?? SANDBOX_SESSIONS_DIR,
       projectsDir: props.projectsDir ?? SANDBOX_PROJECTS_DIR,
     })

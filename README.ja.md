@@ -94,7 +94,7 @@ npm start
    Ctrl+C して再実行)
 6. `minion discord status` で状態を確認
 
-⚠️ Bot トークンは `~/.minion/config.json` に平文で保存されます。人に見せたり
+⚠️ Bot トークンは `~/.config/minion/config.json` に平文で保存されます。人に見せたり
 リポジトリにコミットしたりしないでください。
 
 詳しい仕組みは [.docs/discord.md](.docs/discord.md) を参照。

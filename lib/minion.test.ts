@@ -24,6 +24,24 @@ describe("Minion.inMemory", () => {
     expect(minion.config.list()).toEqual({ greeting: "hello" })
   })
 
+  it("keeps config under the XDG config dir, separate from runtime state", () => {
+    const minion = Minion.inMemory()
+    expect(minion.paths.configFile).toBe("/sandbox/.config/minion/config.json")
+    minion.config.set("greeting", "hello")
+    expect(minion.paths.configDir).not.toBe(minion.paths.dataDir)
+  })
+
+  it("migrates a legacy <dataDir>/config.json to the config dir on construction", () => {
+    const fs = new MemoryMinionFileSystem({
+      files: { "/sandbox/.minion/config.json": `{"greeting":"hello"}` },
+    })
+
+    const minion = Minion.inMemory({ fs })
+
+    expect(minion.config.get("greeting")).toBe("hello")
+    expect(fs.existsSync("/sandbox/.config/minion/config.json")).toBe(true)
+  })
+
   it("runs the start/status/kill lifecycle without touching real disk or processes", async () => {
     const fs = new MemoryMinionFileSystem({
       files: { "/sandbox/pkg/swift/Package.swift": "// package" },

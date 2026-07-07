@@ -27,7 +27,7 @@ npm start   # prestart で スプライトのコピー + tsc ビルドが走る
 
 ## Discord 連携
 
-`~/.minion/config.json` に `discord.token` / `discord.guildId` が設定されていれば、
+`~/.config/minion/config.json` に `discord.token` / `discord.guildId` が設定されていれば、
 gateway が自動でフレンドのペットを配信してくる。セットアップ手順は
 `minion discord status -h` または `.docs/discord.md` を参照。
 
