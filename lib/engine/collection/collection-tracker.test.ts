@@ -5,6 +5,11 @@ import { MinionCollectionTracker } from "@lib/engine/collection/collection-track
 import { timeBucketForHour } from "@lib/engine/stats/stats-snapshot"
 import type { StatsSnapshot } from "@lib/engine/stats/stats-snapshot"
 
+function must<T>(value: T | Error): T {
+  if (value instanceof Error) throw value
+  return value
+}
+
 function stats(overrides: Partial<StatsSnapshot> = {}): StatsSnapshot {
   const hour = overrides.hour ?? 13
   return {
@@ -34,10 +39,10 @@ function tracker(): MinionCollectionTracker {
 
 describe("MinionCollectionTracker.evaluate", () => {
   it("discovers the resolved species and unlocks no achievement at the all-zero baseline", () => {
-    const result = tracker().evaluate(stats())
+    const result = must(tracker().evaluate(stats()))
 
     expect(result.species.id).toBe("day")
-    expect(result.newlyDiscoveredSpecies?.id).toBe("day")
+    expect(result.newlyDiscoveredSpecies.map((s) => s.id)).toEqual(["day"])
     expect(result.newlyUnlockedAchievements).toEqual([])
   })
 
@@ -45,9 +50,9 @@ describe("MinionCollectionTracker.evaluate", () => {
     const t = tracker()
     t.evaluate(stats())
 
-    const second = t.evaluate(stats())
+    const second = must(t.evaluate(stats()))
 
-    expect(second.newlyDiscoveredSpecies).toBeNull()
+    expect(second.newlyDiscoveredSpecies).toEqual([])
     expect(second.newlyUnlockedAchievements).toEqual([])
   })
 
@@ -55,22 +60,35 @@ describe("MinionCollectionTracker.evaluate", () => {
     const t = tracker()
     t.evaluate(stats({ totalSessionsSeen: 0 }))
 
-    const crossing = t.evaluate(stats({ totalSessionsSeen: 1 }))
+    const crossing = must(t.evaluate(stats({ totalSessionsSeen: 1 })))
     expect(crossing.newlyUnlockedAchievements.map((a) => a.id)).toContain("first-session")
 
-    const after = t.evaluate(stats({ totalSessionsSeen: 1 }))
+    const after = must(t.evaluate(stats({ totalSessionsSeen: 1 })))
     expect(after.newlyUnlockedAchievements).toEqual([])
   })
 
-  it("discovers a new rare species when conditions change without re-discovering the old one", () => {
+  it("discovers new species when conditions change without re-discovering old ones", () => {
     const t = tracker()
     t.evaluate(stats({ currentConcurrentSessions: 0 })) // discovers "day"
 
-    const swarm = t.evaluate(stats({ currentConcurrentSessions: 5 }))
-    expect(swarm.newlyDiscoveredSpecies?.id).toBe("swarm")
+    const swarm = must(t.evaluate(stats({ currentConcurrentSessions: 5 })))
+    expect(swarm.species.id).toBe("swarm")
+    // Everything matching at 5 concurrent sessions is discovered at once, not just the manifesting one.
+    expect(swarm.newlyDiscoveredSpecies.map((s) => s.id)).toEqual(["swarm", "overdrive", "twins"])
 
-    const again = t.evaluate(stats({ currentConcurrentSessions: 0 })) // back to "day", already discovered
-    expect(again.newlyDiscoveredSpecies).toBeNull()
+    const again = must(t.evaluate(stats({ currentConcurrentSessions: 0 }))) // back to "day", already discovered
+    expect(again.newlyDiscoveredSpecies).toEqual([])
+  })
+
+  it("discovers species masked by a permanently-true higher-priority rare, keeping the dex completable", () => {
+    const t = tracker()
+
+    // A lifetime-token rare outranks the time-of-day commons — the common
+    // must still be discoverable underneath it.
+    const result = must(t.evaluate(stats({ tokensTotal: 100_000_000 })))
+
+    expect(result.species.id).toBe("legend")
+    expect(result.newlyDiscoveredSpecies.map((s) => s.id)).toContain("day")
   })
 })
 
@@ -96,8 +114,10 @@ describe("MinionCollectionTracker.dex", () => {
     expect(swarm?.discovered).toBe(true)
     expect(swarm?.firstSeenAt).not.toBeNull()
 
+    // The time-of-day common also matched during that evaluation, so it's
+    // discovered too even though the rare outranked it as "current".
     const dayCommon = dex.species.find((s) => s.id === "day")
-    expect(dayCommon?.discovered).toBe(false)
+    expect(dayCommon?.discovered).toBe(true)
   })
 })
 
@@ -129,7 +149,7 @@ describe("MinionCollectionTracker with a custom catalog", () => {
       ],
     })
 
-    const result = t.evaluate(stats({ totalSessionsSeen: 1 }))
+    const result = must(t.evaluate(stats({ totalSessionsSeen: 1 })))
 
     expect(result.species.id).toBe("custom-only")
     expect(result.newlyUnlockedAchievements.map((a) => a.id)).toEqual(["custom-achievement"])

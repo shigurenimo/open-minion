@@ -9,6 +9,7 @@ import {
   statSync,
   writeFileSync,
 } from "node:fs"
+import { toError } from "@lib/engine/errors"
 import { type MinionFileStat, MinionFileSystem } from "@lib/engine/fs/file-system"
 
 export class NodeMinionFileSystem extends MinionFileSystem {
@@ -16,28 +17,55 @@ export class NodeMinionFileSystem extends MinionFileSystem {
     return existsSync(path)
   }
 
-  readFileSync(path: string): string {
-    return readFileSync(path, "utf8")
+  readFileSync(path: string): string | Error {
+    try {
+      return readFileSync(path, "utf8")
+    } catch (thrown) {
+      return toError(thrown)
+    }
   }
 
-  writeFileSync(path: string, data: string): void {
-    writeFileSync(path, data)
+  writeFileSync(path: string, data: string): Error | null {
+    try {
+      writeFileSync(path, data)
+      return null
+    } catch (thrown) {
+      return toError(thrown)
+    }
   }
 
-  mkdirSync(path: string, options?: { recursive?: boolean }): void {
-    mkdirSync(path, { recursive: options?.recursive ?? false })
+  mkdirSync(path: string, options?: { recursive?: boolean }): Error | null {
+    try {
+      mkdirSync(path, { recursive: options?.recursive ?? false })
+      return null
+    } catch (thrown) {
+      return toError(thrown)
+    }
   }
 
-  rmSync(path: string, options?: { force?: boolean }): void {
-    rmSync(path, { force: options?.force ?? false })
+  rmSync(path: string, options?: { force?: boolean }): Error | null {
+    try {
+      rmSync(path, { force: options?.force ?? false })
+      return null
+    } catch (thrown) {
+      return toError(thrown)
+    }
   }
 
-  readdirSync(path: string): string[] {
-    return readdirSync(path)
+  readdirSync(path: string): string[] | Error {
+    try {
+      return readdirSync(path)
+    } catch (thrown) {
+      return toError(thrown)
+    }
   }
 
-  readdirRecursiveSync(path: string): string[] {
-    return readdirSync(path, { recursive: true }) as string[]
+  readdirRecursiveSync(path: string): string[] | Error {
+    try {
+      return readdirSync(path, { recursive: true }) as string[]
+    } catch (thrown) {
+      return toError(thrown)
+    }
   }
 
   createExclusiveSync(path: string): boolean {
@@ -49,7 +77,11 @@ export class NodeMinionFileSystem extends MinionFileSystem {
     }
   }
 
-  statSync(path: string): MinionFileStat {
-    return { mtimeMs: statSync(path).mtimeMs }
+  statSync(path: string): MinionFileStat | Error {
+    try {
+      return { mtimeMs: statSync(path).mtimeMs }
+    } catch (thrown) {
+      return toError(thrown)
+    }
   }
 }

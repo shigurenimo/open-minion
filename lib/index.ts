@@ -6,14 +6,17 @@
 //   import { Minion } from "@shigureni/minion"
 //
 //   const minion = new Minion()
-//   console.log(await minion.app.start(false))
-//   console.log(minion.app.status())
+//   const result = await minion.app.start() // { kind: "started", pid: 123 } など
+//   console.log(minion.app.status().app.running)
 //
 // Pass `Minion.inMemory()` to get a fully sandboxed instance (no real disk,
 // processes, or wall-clock time) for tests or ad-hoc experiments.
 
 // Facade
 export * from "@lib/minion"
+
+// Error-as-value helpers — fallible operations return `T | Error`, never throw
+export * from "@lib/engine/errors"
 
 // App — build/start/kill/status for the Swift app + gateway daemon
 export * from "@lib/engine/app/app-paths"
@@ -37,6 +40,7 @@ export * from "@lib/engine/stats/token-usage-tracker"
 export * from "@lib/engine/stats/stats-collector"
 
 // Collection — the minion dex: rarity-tiered species + achievements, unlocked over time
+export * from "@lib/engine/collection/moon"
 export * from "@lib/engine/collection/species"
 export * from "@lib/engine/collection/achievements"
 export * from "@lib/engine/collection/collection-store"

@@ -16,6 +16,7 @@ type Props = {
   process: MinionProcessRunner
   clock: MinionClock
   sessionsDir: string
+  projectsDir: string
   sessionStats: SessionStatsTracker
   tokenUsage: TokenUsageTracker
 }
@@ -30,6 +31,7 @@ export class MinionStatsCollector {
   private readonly process: MinionProcessRunner
   private readonly clock: MinionClock
   private readonly sessionsDir: string
+  private readonly projectsDir: string
   private readonly sessionStats: SessionStatsTracker
   private readonly tokenUsage: TokenUsageTracker
 
@@ -38,6 +40,7 @@ export class MinionStatsCollector {
     this.process = props.process
     this.clock = props.clock
     this.sessionsDir = props.sessionsDir
+    this.projectsDir = props.projectsDir
     this.sessionStats = props.sessionStats
     this.tokenUsage = props.tokenUsage
   }
@@ -45,17 +48,21 @@ export class MinionStatsCollector {
   /**
    * Reads the current sessions and re-scans token usage, recording both.
    * Touches disk (transcripts can be large) — call this on a slow cadence,
-   * not on every animation tick.
+   * not on every animation tick. Returns an Error when persisting either
+   * tracker's state fails.
    */
-  collect(): StatsSnapshot {
+  collect(): StatsSnapshot | Error {
     const activeSessions = readActiveSessions({
       fs: this.fs,
       process: this.process,
       clock: this.clock,
       sessionsDir: this.sessionsDir,
+      projectsDir: this.projectsDir,
     })
     const sessionSummary = this.sessionStats.record(activeSessions, this.clock.now())
+    if (sessionSummary instanceof Error) return sessionSummary
     const usage = this.tokenUsage.scan()
+    if (usage instanceof Error) return usage
     return this.buildSnapshot(sessionSummary, usage)
   }
 

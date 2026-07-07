@@ -6,7 +6,11 @@ import { Minion } from "@lib/minion"
 
 import pkg from "../../package.json" with { type: "json" }
 
-const minion = new Minion()
+const minion = new Minion({
+  onEvent: (event) => {
+    if (event.type === "build-start") console.log("ビルド中...")
+  },
+})
 const env = { minion }
 
 const HELP = `minion - open-minion CLI

@@ -11,8 +11,11 @@ describe("MinionConfigStore", () => {
     expect(store().list()).toEqual({})
   })
 
-  it("returns an empty string for a missing key", () => {
-    expect(store().get("greeting")).toBe("")
+  it("returns undefined for a missing key, distinguishable from an empty value", () => {
+    const config = store()
+    expect(config.get("greeting")).toBeUndefined()
+    config.set("greeting", "")
+    expect(config.get("greeting")).toBe("")
   })
 
   it("round-trips a set value through get", () => {

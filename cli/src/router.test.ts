@@ -18,6 +18,11 @@ describe("toRequest", () => {
     expect(path).toBe("/config/set/greeting/hello")
   })
 
+  it("URL-encodes segments so values containing / or : keep routing intact", () => {
+    const { path } = toRequest(["config", "set", "url", "https://example.com"])
+    expect(path).toBe("/config/set/url/https%3A%2F%2Fexample.com")
+  })
+
   it("parses long flags into body", () => {
     const { body } = toRequest(["dev", "--force", "true"])
     expect(body.force).toBe("true")

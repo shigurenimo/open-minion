@@ -5,8 +5,10 @@ export type MemoryProcessCall =
   | { kind: "spawnDetached"; command: string[]; options: RunOptions }
   | { kind: "kill"; pid: number; signal: string }
 
-export type MemoryRunInheritHandler = (command: string[]) => number | Promise<number>
-export type MemorySpawnDetachedHandler = (command: string[]) => number
+export type MemoryRunInheritHandler = (
+  command: string[],
+) => number | Error | Promise<number | Error>
+export type MemorySpawnDetachedHandler = (command: string[]) => number | Error
 export type MemoryIsAliveHandler = (pid: number) => boolean
 
 /** Records every call and lets tests stub exit codes, spawned pids, and liveness. */
@@ -44,12 +46,12 @@ export class MemoryMinionProcessRunner extends MinionProcessRunner {
     return this
   }
 
-  async runInherit(command: string[], options: RunOptions = {}): Promise<number> {
+  async runInherit(command: string[], options: RunOptions = {}): Promise<number | Error> {
     this.calls.push({ kind: "runInherit", command, options })
     return await this.runInheritHandler(command)
   }
 
-  spawnDetached(command: string[], options: RunOptions = {}): number {
+  spawnDetached(command: string[], options: RunOptions = {}): number | Error {
     this.calls.push({ kind: "spawnDetached", command, options })
     return this.spawnDetachedHandler(command)
   }

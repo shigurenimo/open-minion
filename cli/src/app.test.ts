@@ -34,6 +34,33 @@ describe("app routes", () => {
     expect(await res.text()).toBe("hello")
   })
 
+  it("404s on /config/get for an unset key", async () => {
+    const minion = Minion.inMemory()
+
+    const res = await app.request("/config/get/missing", postJson({}), { minion })
+
+    expect(res.status).toBe(404)
+    expect(await res.text()).toBe("未設定: missing")
+  })
+
+  it("round-trips a URL-encoded value through /config/set and /config/get", async () => {
+    const minion = Minion.inMemory()
+
+    const encoded = encodeURIComponent("https://example.com")
+    await app.request(`/config/set/url/${encoded}`, postJson({}), { minion })
+    const res = await app.request("/config/get/url", postJson({}), { minion })
+
+    expect(await res.text()).toBe("https://example.com")
+  })
+
+  it("rejects unknown flags with a 400 instead of silently ignoring them", async () => {
+    const minion = Minion.inMemory()
+
+    const res = await app.request("/start", postJson({ wat: "true" }), { minion })
+
+    expect(res.status).toBe(400)
+  })
+
   it("lists every configured key via /config/list", async () => {
     const minion = Minion.inMemory()
     await app.request("/config/set/a/1", postJson({}), { minion })

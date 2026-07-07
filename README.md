@@ -1,142 +1,111 @@
 # minion
 
-A tiny desktop pet that walks around your screen and reacts to your
-[Claude Code](https://claude.com/claude-code) sessions — idle while you're idle,
-running around while a session is busy.
+A tiny desktop pet that walks around your macOS screen and reacts to your
+[Claude Code](https://claude.com/claude-code) sessions — napping while you're
+idle, running around while Claude is busy working.
 
-It's three parts: a Swift menu-less overlay app (`swift/`) that draws the pet, a
-programmable library (`lib/`) that builds/runs it and watches `~/.claude/sessions`
-to decide how the pet should behave, and a CLI (`cli/`) that's a thin consumer of
-that library.
+The more you use Claude Code, the more you collect: heavy usage, late-night
+sessions, and day streaks unlock achievements and rare minions in a built-in dex.
 
 ## Requirements
 
 - macOS
 - [Bun](https://bun.sh)
-- Xcode Command Line Tools (`xcode-select --install`) — needed once, to compile the
-  Swift app on first run
+- Xcode Command Line Tools (`xcode-select --install`) — needed once, to compile
+  the pet on first run
 
-## Usage
+## Quick start
 
 ```sh
 bunx @shigureni/minion
 ```
 
-This builds the app on first run (subsequent runs reuse the build unless the Swift
-source changed) and starts it in the background, alongside a small local gateway
-that watches your Claude Code sessions.
+The first run compiles the pet (takes a minute), then it appears on your screen
+and starts watching your Claude Code sessions. Later runs reuse the build.
 
-Or install it globally so the `minion` command is always available:
+To keep the `minion` command around:
 
 ```sh
 bun add -g @shigureni/minion
 minion
 ```
 
-### Commands
+## Commands
 
-| Command                           | Description                                      |
-| --------------------------------- | ------------------------------------------------ |
-| `minion` / `minion start`         | Start (release build). No-op if already running. |
-| `minion dev`                      | Restart with a debug build.                      |
-| `minion kill`                     | Stop the app and its gateway.                    |
-| `minion reboot`                   | Restart with a release build.                    |
-| `minion status`                   | Show whether the app/gateway are running.        |
-| `minion dex`                      | Show unlocked achievements and the minion dex.   |
-| `minion config list`              | List config values.                              |
-| `minion config get <key>`         | Get a config value.                              |
-| `minion config set <key> <value>` | Set a config value.                              |
+| Command                          | What it does                             |
+| -------------------------------- | ---------------------------------------- |
+| `minion` / `minion start`        | Start the pet. No-op if already running. |
+| `minion kill`                    | Stop the pet and its gateway.            |
+| `minion reboot`                  | Restart.                                 |
+| `minion status`                  | Is it running?                           |
+| `minion dex`                     | Your achievements and minion collection. |
+| `minion config list / get / set` | Tweak settings.                          |
+| `minion dev`                     | Restart with a debug build.              |
 
-Add `-h` to any command for its help text (e.g. `minion start -h`).
+Add `-h` to any command for details. State lives in `~/.minion`.
 
-### Achievements & the minion dex
+## The dex
 
-`minion dex` scores your Claude Code usage against a catalog of achievements and
-minion species, unlocking whichever ones your stats now satisfy: lifetime and
-concurrent session counts, a day-streak, distinct projects worked in, time of day,
-and token consumption both lifetime and rolling (today / this week, scanned from
-`~/.claude/projects/**/*.jsonl`). Rarer minion species require rarer conditions (5+
-concurrent sessions, a 7-day streak, 10+ distinct projects, 10M+ lifetime tokens,
-coding through late night, ...); the five common species just track time of day.
-Undiscovered species show up as `???` until you earn them.
+`minion dex` turns your Claude Code habits into a collection game. It reads your
+session activity and token usage (from Claude Code's local transcripts) and
+unlocks two kinds of things:
 
-Both catalogs (`DEFAULT_MINION_SPECIES` / `DEFAULT_ACHIEVEMENTS`) are just the
-defaults — pass your own `species: MinionSpecies[]` / `achievements: Achievement[]`
-to `new Minion({ ... })` to add your own entries, retheme the built-ins, or fill in
-each species'/achievement's `asset` field (an opaque string this library never
-reads — a sprite path, bundle key, whatever your host app's renderer expects) once
-art exists:
+- **Achievements** — milestones like your first session, a 7-day streak, running
+  5 sessions at once, or burning a million tokens in a day.
+- **Minions** — the five common species come out at different times of day; the
+  rare ones demand something special: 5+ parallel sessions, a week-long streak,
+  hopping across 10 different projects, 10M lifetime tokens, coding at 3am...
 
-```ts
-import { Minion, type MinionSpecies } from "@shigureni/minion"
+Undiscovered entries stay hidden as `???` until you earn them. Sprites aren't
+wired into the desktop pet yet — for now the dex is a text-only collection — but
+per-species art hooks are already in place.
 
-const mySpecies: MinionSpecies[] = [
-  {
-    id: "day",
-    name: "Sunny Pal",
-    rarity: "common",
-    description: "Appears during the day.",
-    condition: (s) => s.timeBucket === "day",
-    asset: "sprites/sunny-pal.png",
-  },
-  // ...
-]
+## Use it as a library
 
-const minion = new Minion({ species: mySpecies })
-```
-
-`resolveSpecies()` already decides which species is "in effect" at any given
-moment; the Swift side isn't wired up to read `asset` yet, so for now `minion dex`
-is a text-only collection game.
-
-State (pid files, config, and the Swift build output) lives in `~/.minion`,
-independent of wherever the package itself is installed.
-
-## Library
-
-Everything the CLI does is exposed programmatically through the `Minion` facade —
-the CLI (`cli/`) is just a Hono-routed consumer of it, wired via `c.env.minion`.
+Everything the CLI does is also a programmable API:
 
 ```ts
 import { Minion } from "@shigureni/minion"
 
 const minion = new Minion()
+// { kind: "started", pid } | { kind: "build-failed", ... } | ... | Error — the library never throws
+const result = await minion.app.start()
 
-console.log(await minion.app.start(false)) // build (if needed) + launch the app + gateway
-console.log(minion.app.status())
-minion.config.set("greeting", "hello")
+const stats = minion.stats.collect()
+const { species } = minion.collection.evaluate(stats)
+console.log(`right now: ${species.name}`)
 ```
 
-Every side-effecting boundary (filesystem, process spawning, clock, randomness) is
-injected, so tests can swap in an in-memory sandbox that touches no real disk,
-processes, or wall-clock time:
+Everything is injectable. Bring your own species/achievement catalogs — including
+your own art via each entry's `asset` field — or run fully sandboxed in tests:
 
 ```ts
-import { Minion } from "@shigureni/minion"
+// Custom catalog: your species, your conditions, your sprites.
+const custom = new Minion({
+  species: [
+    {
+      id: "sunny",
+      name: "Sunny Pal",
+      rarity: "common",
+      description: "Appears during the day.",
+      condition: (s) => s.timeBucket === "day",
+      asset: "sprites/sunny.png",
+    },
+  ],
+})
 
-const minion = Minion.inMemory()
-await minion.app.start(false)
+// Sandbox: no real disk, processes, or clock.
+const sandbox = Minion.inMemory()
 ```
 
-See `lib/index.ts` for the full exported surface (the `Minion` facade, the
-`MinionAppRunner` / `MinionConfigStore` / `MinionGatewayServer` engine classes, the
-`MinionStatsCollector` / `MinionCollectionTracker` behind `minion dex`, and the
-`Node*`/`Memory*` implementation of each IO boundary).
+See `lib/index.ts` for the full API surface.
 
 ## Development
 
 ```sh
 bun install
-bun run check   # format + lint + type-check (vite-plus)
+bun run check   # format + lint + type-check
 bun run test
-bun run fmt
-bun run lint
 ```
 
-Business logic lives in `lib/` (build/start/kill/status, config, session watching,
-pet behavior) behind injected `MinionFileSystem` / `MinionProcessRunner` /
-`MinionClock` / `MinionRandomSource` boundaries — real (`Node*`) implementations for
-production, in-memory (`Memory*`) ones for tests. `cli/src/routes/<command>/route.ts`
-is one file per command (hono-routed, mirrors the structure of jobantenna-cli); each
-handler just calls into `c.env.minion` — adding a command means adding a route file,
-wiring it into `cli/src/app.ts`, and (if it's new behavior) adding it to `Minion`.
+Architecture notes and contributor conventions live in [CLAUDE.md](CLAUDE.md).

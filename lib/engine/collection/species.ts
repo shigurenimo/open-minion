@@ -1,3 +1,4 @@
+import { isFullMoon, isNewMoon } from "@lib/engine/collection/moon"
 import type { StatsSnapshot } from "@lib/engine/stats/stats-snapshot"
 
 export type MinionRarity = "common" | "rare"
@@ -31,6 +32,38 @@ export type MinionSpecies = {
  */
 export const DEFAULT_MINION_SPECIES: MinionSpecies[] = [
   {
+    id: "zorome",
+    name: "ゾロめミニオン",
+    rarity: "rare",
+    description: "時計が11:11か22:22を指す瞬間だけ現れる。",
+    condition: (s) => {
+      const minute = s.now.getMinutes()
+      return (s.hour === 11 && minute === 11) || (s.hour === 22 && minute === 22)
+    },
+  },
+  {
+    id: "full-moon",
+    name: "まんげつミニオン",
+    rarity: "rare",
+    description: "満月の夜(20時〜5時)に現れる。",
+    condition: (s) =>
+      isFullMoon(s.now) && (s.timeBucket === "night" || s.timeBucket === "lateNight"),
+  },
+  {
+    id: "new-moon",
+    name: "しんげつミニオン",
+    rarity: "rare",
+    description: "新月の深夜、月のない暗い夜に現れる。",
+    condition: (s) => isNewMoon(s.now) && s.timeBucket === "lateNight",
+  },
+  {
+    id: "mega-swarm",
+    name: "だいぐんせいミニオン",
+    rarity: "rare",
+    description: "同時に10以上のセッションが動く修羅場に現れる。",
+    condition: (s) => s.currentConcurrentSessions >= 10,
+  },
+  {
     id: "swarm",
     name: "ぐんせいミニオン",
     rarity: "rare",
@@ -50,6 +83,34 @@ export const DEFAULT_MINION_SPECIES: MinionSpecies[] = [
     rarity: "rare",
     description: "深夜(0時〜5時)にセッションを動かしていると現れる。",
     condition: (s) => s.timeBucket === "lateNight" && s.currentConcurrentSessions >= 1,
+  },
+  {
+    id: "morning-active",
+    name: "あさかつミニオン",
+    rarity: "rare",
+    description: "朝(5時〜10時)にセッションを動かしていると現れる。",
+    condition: (s) => s.timeBucket === "morning" && s.currentConcurrentSessions >= 1,
+  },
+  {
+    id: "lunch-break",
+    name: "おひるミニオン",
+    rarity: "rare",
+    description: "お昼(12時台)にセッションを動かしていると現れる。",
+    condition: (s) => s.hour === 12 && s.currentConcurrentSessions >= 1,
+  },
+  {
+    id: "twins",
+    name: "ふたごミニオン",
+    rarity: "rare",
+    description: "同時に2つのセッションが動いていると現れる。",
+    condition: (s) => s.currentConcurrentSessions >= 2,
+  },
+  {
+    id: "legend",
+    name: "でんせつミニオン",
+    rarity: "rare",
+    description: "累計1億トークンを消費したでんせつのもとに現れる。",
+    condition: (s) => s.tokensTotal >= 100_000_000,
   },
   {
     id: "torrent",
@@ -73,11 +134,62 @@ export const DEFAULT_MINION_SPECIES: MinionSpecies[] = [
     condition: (s) => s.tokensToday >= 1_000_000,
   },
   {
+    id: "glutton",
+    name: "おおぐいミニオン",
+    rarity: "rare",
+    description: "1日で30万トークンを消費すると現れる。",
+    condition: (s) => s.tokensToday >= 300_000,
+  },
+  {
+    id: "perfect-attendance",
+    name: "かいきんミニオン",
+    rarity: "rare",
+    description: "30日連続でセッションを実行していると現れる。",
+    condition: (s) => s.currentStreakDays >= 30,
+  },
+  {
     id: "marathon",
     name: "マラソンミニオン",
     rarity: "rare",
     description: "7日連続でセッションを実行していると現れる。",
     condition: (s) => s.currentStreakDays >= 7,
+  },
+  {
+    id: "three-day-streak",
+    name: "みっかミニオン",
+    rarity: "rare",
+    description: "3日連続でセッションを実行していると現れる。みっかぼうず卒業。",
+    condition: (s) => s.currentStreakDays >= 3,
+  },
+  {
+    id: "month-end",
+    name: "しめきりミニオン",
+    rarity: "rare",
+    description: "月末の日に現れる。しめきりは大丈夫?",
+    condition: (s) =>
+      new Date(s.now.getFullYear(), s.now.getMonth(), s.now.getDate() + 1).getDate() === 1,
+  },
+  {
+    id: "friday-night",
+    name: "きんようミニオン",
+    rarity: "rare",
+    description: "金曜の夜(20時〜24時)にセッションを動かしていると現れる。",
+    condition: (s) =>
+      s.now.getDay() === 5 && s.timeBucket === "night" && s.currentConcurrentSessions >= 1,
+  },
+  {
+    id: "sunday-worker",
+    name: "にちようミニオン",
+    rarity: "rare",
+    description: "日曜にセッションを動かしていると現れる。",
+    condition: (s) => s.now.getDay() === 0 && s.currentConcurrentSessions >= 1,
+  },
+  {
+    id: "devoted",
+    name: "いちずミニオン",
+    rarity: "rare",
+    description: "累計50セッションを超えてもプロジェクトがひとつだけだと現れる。",
+    condition: (s) => s.uniqueProjectsSeen === 1 && s.totalSessionsSeen >= 50,
   },
   {
     id: "wanderer",
@@ -87,11 +199,25 @@ export const DEFAULT_MINION_SPECIES: MinionSpecies[] = [
     condition: (s) => s.uniqueProjectsSeen >= 10,
   },
   {
+    id: "juggler",
+    name: "かけもちミニオン",
+    rarity: "rare",
+    description: "3つ以上のプロジェクトをかけもちすると現れる。",
+    condition: (s) => s.uniqueProjectsSeen >= 3,
+  },
+  {
     id: "veteran",
     name: "ベテランミニオン",
     rarity: "rare",
     description: "累計100セッションを超えたころに現れる。",
     condition: (s) => s.totalSessionsSeen >= 100,
+  },
+  {
+    id: "rookie",
+    name: "ひよこミニオン",
+    rarity: "rare",
+    description: "累計10セッションを実行したかけだしに現れる。",
+    condition: (s) => s.totalSessionsSeen >= 10,
   },
   {
     id: "late-night",
@@ -135,15 +261,15 @@ export const DEFAULT_MINION_SPECIES: MinionSpecies[] = [
  * order and returns the first match — defaults to `DEFAULT_MINION_SPECIES`,
  * whose time-of-day commons cover every hour so it always resolves. A custom
  * catalog must include an unconditional (or otherwise fully-covering)
- * fallback entry, or this throws when nothing matches.
+ * fallback entry, or this returns an Error when nothing matches.
  */
 export function resolveSpecies(
   stats: StatsSnapshot,
   catalog: MinionSpecies[] = DEFAULT_MINION_SPECIES,
-): MinionSpecies {
+): MinionSpecies | Error {
   const found = catalog.find((species) => species.condition(stats))
   if (!found) {
-    throw new Error("no minion species matched — the catalog needs a fully-covering fallback")
+    return new Error("no minion species matched — the catalog needs a fully-covering fallback")
   }
   return found
 }

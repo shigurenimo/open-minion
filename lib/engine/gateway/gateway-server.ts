@@ -1,4 +1,5 @@
 import type { Hono } from "hono"
+import { toError } from "@lib/engine/errors"
 import type { MinionFileSystem } from "@lib/engine/fs/file-system"
 import type { MinionProcessRunner } from "@lib/engine/process/process-runner"
 import type { MinionClock } from "@lib/engine/time/clock"
@@ -16,6 +17,7 @@ type Props = {
   clock: MinionClock
   random: MinionRandomSource
   sessionsDir: string
+  projectsDir: string
   port?: number
   tickMs?: number
 }
@@ -41,6 +43,7 @@ export class MinionGatewayServer {
   private readonly process: MinionProcessRunner
   private readonly clock: MinionClock
   private readonly sessionsDir: string
+  private readonly projectsDir: string
   private readonly port: number
   private readonly tickMs: number
   private readonly engine: PetBehaviorEngine
@@ -50,13 +53,15 @@ export class MinionGatewayServer {
     this.process = props.process
     this.clock = props.clock
     this.sessionsDir = props.sessionsDir
+    this.projectsDir = props.projectsDir
     this.port = props.port ?? DEFAULT_PORT
     this.tickMs = props.tickMs ?? DEFAULT_TICK_MS
     this.engine = new PetBehaviorEngine({ random: props.random })
     this.routes = buildGatewayRoutes(this.engine)
   }
 
-  start(): MinionGatewayHandle {
+  /** Binds the real server. Returns an Error (instead of throwing) when the port is taken or binding fails. */
+  start(): MinionGatewayHandle | Error {
     const engine = this.engine
     const routes = this.routes
     const clients = new Set<{ send: (data: string) => void }>()
@@ -73,6 +78,7 @@ export class MinionGatewayServer {
         process: this.process,
         clock: this.clock,
         sessionsDir: this.sessionsDir,
+        projectsDir: this.projectsDir,
       })
       if (engine.tick(now, activeSessions)) broadcast()
     }
@@ -80,36 +86,41 @@ export class MinionGatewayServer {
     const interval = setInterval(tick, this.tickMs)
     tick()
 
-    const server = Bun.serve({
-      port: this.port,
-      fetch(req, srv) {
-        const url = new URL(req.url)
-        if (url.pathname === "/ws") {
-          if (srv.upgrade(req)) return undefined
-          return new Response("upgrade failed", { status: 400 })
-        }
-        return routes.fetch(req)
-      },
-      websocket: {
-        open(ws) {
-          clients.add(ws)
-          ws.send(JSON.stringify({ sessions: engine.snapshot() }))
+    try {
+      const server = Bun.serve({
+        port: this.port,
+        fetch(req, srv) {
+          const url = new URL(req.url)
+          if (url.pathname === "/ws") {
+            if (srv.upgrade(req)) return undefined
+            return new Response("upgrade failed", { status: 400 })
+          }
+          return routes.fetch(req)
         },
-        close(ws) {
-          clients.delete(ws)
+        websocket: {
+          open(ws) {
+            clients.add(ws)
+            ws.send(JSON.stringify({ sessions: engine.snapshot() }))
+          },
+          close(ws) {
+            clients.delete(ws)
+          },
+          message() {
+            // クライアントからのメッセージは使わない
+          },
         },
-        message() {
-          // クライアントからのメッセージは使わない
-        },
-      },
-    })
+      })
 
-    return {
-      port: server.port ?? this.port,
-      stop: () => {
-        clearInterval(interval)
-        void server.stop(true)
-      },
+      return {
+        port: server.port ?? this.port,
+        stop: () => {
+          clearInterval(interval)
+          void server.stop(true)
+        },
+      }
+    } catch (thrown) {
+      clearInterval(interval)
+      return toError(thrown)
     }
   }
 }

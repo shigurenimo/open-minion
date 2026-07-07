@@ -1,5 +1,6 @@
 import { homedir } from "node:os"
 import { join } from "node:path"
+import { fileURLToPath } from "node:url"
 import type { MinionFileSystem } from "@lib/engine/fs/file-system"
 import { MemoryMinionFileSystem } from "@lib/engine/fs/memory-file-system"
 import { NodeMinionFileSystem } from "@lib/engine/fs/node-file-system"
@@ -13,7 +14,7 @@ import type { MinionRandomSource } from "@lib/engine/random/random-source"
 import { MemoryMinionRandomSource } from "@lib/engine/random/memory-random-source"
 import { NodeMinionRandomSource } from "@lib/engine/random/node-random-source"
 import { type MinionPaths, resolveMinionPaths } from "@lib/engine/app/app-paths"
-import { MinionAppRunner } from "@lib/engine/app/app-runner"
+import { type MinionAppEvent, MinionAppRunner } from "@lib/engine/app/app-runner"
 import { MinionConfigStore } from "@lib/engine/config/config-store"
 import type { Achievement } from "@lib/engine/collection/achievements"
 import { MinionCollectionStore } from "@lib/engine/collection/collection-store"
@@ -30,7 +31,7 @@ const SANDBOX_DATA_DIR = "/sandbox/.minion"
 const SANDBOX_SESSIONS_DIR = "/sandbox/.claude/sessions"
 const SANDBOX_PROJECTS_DIR = "/sandbox/.claude/projects"
 
-type Props = {
+export type MinionOptions = {
   /** Filesystem boundary. Replace with MemoryMinionFileSystem to sandbox all disk I/O. */
   fs?: MinionFileSystem
   /** Process runner used to build/spawn the Swift app and the gateway daemon. */
@@ -51,6 +52,8 @@ type Props = {
   species?: MinionSpecies[]
   /** Achievement catalog for `minion.collection`. Defaults to `DEFAULT_ACHIEVEMENTS` — pass your own to replace it entirely. */
   achievements?: Achievement[]
+  /** Progress events from `minion.app` (build started, ...). Defaults to a no-op — the library never writes to stdout itself. */
+  onEvent?: (event: MinionAppEvent) => void
 }
 
 export type MinionGatewayServerOptions = {
@@ -70,8 +73,9 @@ export type MinionGatewayServerOptions = {
  * import { Minion } from "@shigureni/minion"
  *
  * const minion = new Minion()
- * console.log(await minion.app.start(false))
- * console.log(minion.app.status())
+ * const result = await minion.app.start() // { kind: "started", pid: 123 } | ... | Error
+ * if (result instanceof Error) console.error(result.message)
+ * console.log(minion.app.status().app.running)
  * ```
  */
 export class Minion {
@@ -86,8 +90,9 @@ export class Minion {
   private readonly clock: MinionClock
   private readonly random: MinionRandomSource
   private readonly sessionsDir: string
+  private readonly projectsDir: string
 
-  constructor(props: Props = {}) {
+  constructor(props: MinionOptions = {}) {
     const packageRoot = props.packageRoot ?? defaultPackageRoot()
     const fs = props.fs ?? new NodeMinionFileSystem()
     const processRunner = props.process ?? new NodeMinionProcessRunner()
@@ -100,6 +105,7 @@ export class Minion {
     this.clock = clock
     this.random = random
     this.sessionsDir = props.sessionsDir ?? join(homedir(), ".claude", "sessions")
+    this.projectsDir = projectsDir
 
     this.paths = resolveMinionPaths({ packageRoot, dataDir: props.dataDir })
 
@@ -110,6 +116,7 @@ export class Minion {
       process: processRunner,
       paths: this.paths,
       gatewayCommand: ["bun", resolveGatewayDaemonScript()],
+      onEvent: props.onEvent,
     })
 
     this.stats = new MinionStatsCollector({
@@ -117,8 +124,14 @@ export class Minion {
       process: processRunner,
       clock,
       sessionsDir: this.sessionsDir,
+      projectsDir,
       sessionStats: new SessionStatsTracker({ fs, path: this.paths.sessionStatsFile }),
-      tokenUsage: new TokenUsageTracker({ fs, path: this.paths.usageScanFile, projectsDir }),
+      tokenUsage: new TokenUsageTracker({
+        fs,
+        clock,
+        path: this.paths.usageScanFile,
+        projectsDir,
+      }),
     })
 
     this.collection = new MinionCollectionTracker({
@@ -138,12 +151,16 @@ export class Minion {
    * NOT covered by `inMemory()`: `gatewayServer().start()` still calls
    * `Bun.serve` and binds a real port; pass `port: 0` to let the OS pick one.
    */
-  static inMemory(props: Props = {}): Minion {
+  static inMemory(props: MinionOptions = {}): Minion {
+    // The default sandbox fs stamps mtimes off the sandbox clock, so
+    // recency-based logic (e.g. the token-scan backfill window) sees one
+    // consistent timeline instead of mixing wall-clock mtimes with a frozen clock.
+    const clock = props.clock ?? new MemoryMinionClock()
     return new Minion({
       ...props,
-      fs: props.fs ?? new MemoryMinionFileSystem(),
+      fs: props.fs ?? new MemoryMinionFileSystem({ now: () => clock.millis() }),
       process: props.process ?? new MemoryMinionProcessRunner(),
-      clock: props.clock ?? new MemoryMinionClock(),
+      clock,
       random: props.random ?? new MemoryMinionRandomSource(),
       packageRoot: props.packageRoot ?? SANDBOX_PACKAGE_ROOT,
       dataDir: props.dataDir ?? SANDBOX_DATA_DIR,
@@ -164,6 +181,7 @@ export class Minion {
       clock: this.clock,
       random: this.random,
       sessionsDir: this.sessionsDir,
+      projectsDir: this.projectsDir,
       port: options.port,
       tickMs: options.tickMs,
     })
@@ -171,5 +189,6 @@ export class Minion {
 }
 
 function defaultPackageRoot(): string {
-  return new URL("..", import.meta.url).pathname
+  // URL.pathname はパスに空白や非ASCII文字があるとパーセントエンコードされたまま壊れる
+  return fileURLToPath(new URL("..", import.meta.url))
 }

@@ -1,23 +1,34 @@
 import { join } from "node:path"
+import { z } from "zod"
+import { safeJsonParse } from "@lib/engine/errors"
 import type { MinionFileSystem } from "@lib/engine/fs/file-system"
 import { JsonFileStore } from "@lib/engine/fs/json-file-store"
+import type { MinionClock } from "@lib/engine/time/clock"
 
-type FileScanState = {
-  mtimeMs: number
-  linesConsumed: number
-}
+const scanDataSchema = z.object({
+  tokensTotal: z.number().catch(0),
+  tokensByDate: z.record(z.string(), z.number()).catch({}),
+  files: z
+    .record(z.string(), z.object({ mtimeMs: z.number(), linesConsumed: z.number() }))
+    .catch({}),
+})
 
-type UsageScanData = {
-  tokensTotal: number
-  tokensByDate: Record<string, number>
-  files: Record<string, FileScanState>
-}
+type UsageScanData = z.infer<typeof scanDataSchema>
 
 const EMPTY: UsageScanData = { tokensTotal: 0, tokensByDate: {}, files: {} }
 
 // Bounds tokensByDate's growth; only the running total needs to survive
 // forever, per-day figures beyond ~4 months aren't queried by anything here.
 const MAX_TRACKED_DATES = 120
+
+// Backfill cutoff: an unseen transcript whose mtime is older than this is
+// skipped without being read. The rolling figures (today / this week) only
+// need the trailing 7 days, so the first-ever scan parses the active week
+// instead of the full history — lifetime totals just accrue from that point
+// on. Must stay >= the WEEK_DAYS window in stats-collector.ts. A dormant
+// file that gets appended later turns recent again and is then counted whole,
+// history included — a harmless one-time bump.
+const BACKFILL_WINDOW_MS = 7 * 24 * 60 * 60 * 1000
 
 export type TokenUsageSummary = {
   tokensTotal: number
@@ -26,6 +37,7 @@ export type TokenUsageSummary = {
 
 type Props = {
   fs: MinionFileSystem
+  clock: MinionClock
   path: string
   /** Claude Code's transcript root, e.g. `~/.claude/projects`. */
   projectsDir: string
@@ -41,34 +53,41 @@ type Props = {
  */
 export class TokenUsageTracker {
   private readonly fs: MinionFileSystem
+  private readonly clock: MinionClock
   private readonly projectsDir: string
   private readonly store: JsonFileStore<UsageScanData>
 
   constructor(props: Props) {
     this.fs = props.fs
+    this.clock = props.clock
     this.projectsDir = props.projectsDir
-    this.store = new JsonFileStore({ fs: props.fs, path: props.path, defaultValue: EMPTY })
+    this.store = new JsonFileStore({
+      fs: props.fs,
+      path: props.path,
+      schema: scanDataSchema,
+      defaultValue: EMPTY,
+    })
   }
 
-  /** Re-scans changed transcript files and persists the updated totals. Touches disk — call on a slow cadence. */
-  scan(): TokenUsageSummary {
+  /**
+   * Re-scans changed transcript files and persists the updated totals.
+   * Touches disk — call on a slow cadence. An unreadable transcript dir/file
+   * is skipped (transcripts come and go); only a failure to persist the
+   * scan state itself returns an Error.
+   */
+  scan(): TokenUsageSummary | Error {
     const data = this.store.read()
 
-    let relativeFiles: string[]
-    try {
-      relativeFiles = this.fs
-        .readdirRecursiveSync(this.projectsDir)
-        .filter((f) => f.endsWith(".jsonl"))
-    } catch {
-      return toSummary(data)
-    }
+    const entries = this.fs.readdirRecursiveSync(this.projectsDir)
+    if (entries instanceof Error) return toSummary(data)
 
-    for (const relativeFile of relativeFiles) {
+    for (const relativeFile of entries.filter((f) => f.endsWith(".jsonl"))) {
       this.scanFile(join(this.projectsDir, relativeFile), data)
     }
 
     pruneOldDates(data.tokensByDate)
-    this.store.write(data)
+    const writeError = this.store.write(data)
+    if (writeError) return writeError
     return toSummary(data)
   }
 
@@ -78,22 +97,15 @@ export class TokenUsageTracker {
   }
 
   private scanFile(path: string, data: UsageScanData): void {
-    let mtimeMs: number
-    try {
-      mtimeMs = this.fs.statSync(path).mtimeMs
-    } catch {
-      return
-    }
+    const stat = this.fs.statSync(path)
+    if (stat instanceof Error) return
 
     const known = data.files[path]
-    if (known && known.mtimeMs === mtimeMs) return // unchanged since the last scan
+    if (known && known.mtimeMs === stat.mtimeMs) return // unchanged since the last scan
+    if (!known && this.clock.millis() - stat.mtimeMs > BACKFILL_WINDOW_MS) return // old history — not worth reading
 
-    let content: string
-    try {
-      content = this.fs.readFileSync(path)
-    } catch {
-      return
-    }
+    const content = this.fs.readFileSync(path)
+    if (content instanceof Error) return
 
     // Filter blank lines (notably the trailing "" from a file that ends in
     // "\n", which every appended JSONL record does) before indexing — a raw
@@ -106,17 +118,17 @@ export class TokenUsageTracker {
       addLineUsage(lines[i] as string, data)
     }
 
-    data.files[path] = { mtimeMs, linesConsumed: lines.length }
+    data.files[path] = { mtimeMs: stat.mtimeMs, linesConsumed: lines.length }
   }
 }
 
+// Hand-rolled shape checks, not zod: this runs per transcript line, and a
+// first-ever scan chews through hundreds of thousands of lines — zod here
+// roughly doubles the post-JSON.parse cost for no safety gain over these
+// typeof guards (a wrong-shaped line just contributes 0 tokens either way).
 function addLineUsage(line: string, data: UsageScanData): void {
-  let parsed: unknown
-  try {
-    parsed = JSON.parse(line)
-  } catch {
-    return
-  }
+  const parsed = safeJsonParse(line)
+  if (parsed instanceof Error) return
   if (typeof parsed !== "object" || parsed === null) return
 
   const usage = (parsed as { message?: { usage?: Record<string, unknown> } }).message?.usage

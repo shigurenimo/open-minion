@@ -1,26 +1,35 @@
+import { toError } from "@lib/engine/errors"
 import { MinionProcessRunner, type RunOptions } from "@lib/engine/process/process-runner"
 
 export class NodeMinionProcessRunner extends MinionProcessRunner {
-  async runInherit(command: string[], options: RunOptions = {}): Promise<number> {
-    const [cmd, ...args] = command
-    const proc = Bun.spawn([cmd ?? "", ...args], {
-      cwd: options.cwd,
-      stdout: "inherit",
-      stderr: "inherit",
-    })
-    return await proc.exited
+  async runInherit(command: string[], options: RunOptions = {}): Promise<number | Error> {
+    try {
+      const [cmd, ...args] = command
+      const proc = Bun.spawn([cmd ?? "", ...args], {
+        cwd: options.cwd,
+        stdout: "inherit",
+        stderr: "inherit",
+      })
+      return await proc.exited
+    } catch (thrown) {
+      return toError(thrown)
+    }
   }
 
-  spawnDetached(command: string[], options: RunOptions = {}): number {
-    const [cmd, ...args] = command
-    const proc = Bun.spawn([cmd ?? "", ...args], {
-      cwd: options.cwd,
-      stdout: "ignore",
-      stderr: "ignore",
-      stdin: "ignore",
-    })
-    proc.unref()
-    return proc.pid
+  spawnDetached(command: string[], options: RunOptions = {}): number | Error {
+    try {
+      const [cmd, ...args] = command
+      const proc = Bun.spawn([cmd ?? "", ...args], {
+        cwd: options.cwd,
+        stdout: "ignore",
+        stderr: "ignore",
+        stdin: "ignore",
+      })
+      proc.unref()
+      return proc.pid
+    } catch (thrown) {
+      return toError(thrown)
+    }
   }
 
   kill(pid: number, signal: string = "SIGTERM"): void {

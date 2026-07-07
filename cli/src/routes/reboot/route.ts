@@ -1,16 +1,22 @@
-import { zValidator } from "@hono/zod-validator"
 import { z } from "zod"
 import { factory } from "@/factory"
+import { bodyValidator } from "@/lib/body-validator"
+import { formatKillResult, formatStartResult, isStartError } from "@/lib/format"
 import { helpGuard } from "@/lib/help-guard"
 
-const schema = z.object({})
+const schema = z.strictObject({})
 
 export const help = `Usage: minion reboot
 
 一旦停止してから、リリースビルドで起動し直す。`
 
-export default factory.createHandlers(helpGuard(help), zValidator("json", schema), async (c) => {
-  const killMessage = c.env.minion.app.kill()
-  const startMessage = await c.env.minion.app.start(false)
-  return c.text([killMessage, startMessage].join("\n"))
+export default factory.createHandlers(helpGuard(help), bodyValidator(schema), async (c) => {
+  const killResult = c.env.minion.app.kill()
+  if (killResult instanceof Error) return c.text(killResult.message, 500)
+  const startResult = await c.env.minion.app.start()
+  if (startResult instanceof Error) {
+    return c.text([formatKillResult(killResult), startResult.message].join("\n"), 500)
+  }
+  const text = [formatKillResult(killResult), formatStartResult(startResult)].join("\n")
+  return c.text(text, isStartError(startResult) ? 500 : 200)
 })

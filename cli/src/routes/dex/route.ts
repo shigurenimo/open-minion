@@ -1,20 +1,22 @@
-import { zValidator } from "@hono/zod-validator"
 import { z } from "zod"
 import { factory } from "@/factory"
+import { bodyValidator } from "@/lib/body-validator"
 import { helpGuard } from "@/lib/help-guard"
 import type { MinionRarity } from "@lib/engine/collection/species"
 
-const schema = z.object({})
+const schema = z.strictObject({})
 
 export const help = `Usage: minion dex
 
 実績とミニオン図鑑を表示する。セッション数・同時実行数・時間帯・トークン消費量を
 元に実績を解除し、条件を満たすと珍しいミニオンが出現する。`
 
-export default factory.createHandlers(helpGuard(help), zValidator("json", schema), async (c) => {
+export default factory.createHandlers(helpGuard(help), bodyValidator(schema), async (c) => {
   const minion = c.env.minion
   const stats = minion.stats.collect()
+  if (stats instanceof Error) return c.text(stats.message, 500)
   const evaluation = minion.collection.evaluate(stats)
+  if (evaluation instanceof Error) return c.text(evaluation.message, 500)
   const { achievements, species } = minion.collection.dex()
 
   const lines: string[] = []
@@ -29,11 +31,11 @@ export default factory.createHandlers(helpGuard(help), zValidator("json", schema
     lines.push("実績を解除した!")
     for (const a of newlyUnlocked) lines.push(`  ★ ${a.name} — ${a.description}`)
   }
-  if (evaluation.newlyDiscoveredSpecies) {
+  if (evaluation.newlyDiscoveredSpecies.length > 0) {
     lines.push("")
-    lines.push(
-      `新しいミニオンを発見した! ${evaluation.newlyDiscoveredSpecies.name} (${rarityLabel(evaluation.newlyDiscoveredSpecies.rarity)})`,
-    )
+    for (const discovered of evaluation.newlyDiscoveredSpecies) {
+      lines.push(`新しいミニオンを発見した! ${discovered.name} (${rarityLabel(discovered.rarity)})`)
+    }
   }
 
   const unlockedCount = achievements.filter((a) => a.unlocked).length

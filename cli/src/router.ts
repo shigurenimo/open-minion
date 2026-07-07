@@ -40,6 +40,7 @@ export function toRequest(args: string[]) {
     }
   }
 
-  const path = `/${segments.join("/")}`
+  // `/` や `:` を含む値(URLなど)がルーティングを壊さないようエンコードする。Hono がパラメータ取得時にデコードする。
+  const path = `/${segments.map(encodeURIComponent).join("/")}`
   return { path, body, global }
 }

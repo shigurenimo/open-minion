@@ -26,32 +26,35 @@ export class MemoryMinionFileSystem extends MinionFileSystem {
     return this.dirs.has(path) || this.files.has(path)
   }
 
-  readFileSync(path: string): string {
+  readFileSync(path: string): string | Error {
     const data = this.files.get(path)
-    if (data === undefined) throw new Error(`not found: ${path}`)
+    if (data === undefined) return new Error(`not found: ${path}`)
     return data
   }
 
-  writeFileSync(path: string, data: string): void {
+  writeFileSync(path: string, data: string): Error | null {
     this.files.set(path, data)
     this.touch(path)
+    return null
   }
 
-  mkdirSync(path: string, options?: { recursive?: boolean }): void {
+  mkdirSync(path: string, options?: { recursive?: boolean }): Error | null {
     void options
     this.dirs.add(path)
+    return null
   }
 
-  rmSync(path: string, options?: { force?: boolean }): void {
+  rmSync(path: string, options?: { force?: boolean }): Error | null {
     if (!options?.force && !this.existsSync(path)) {
-      throw new Error(`not found: ${path}`)
+      return new Error(`not found: ${path}`)
     }
     this.files.delete(path)
     this.dirs.delete(path)
     this.mtimes.delete(path)
+    return null
   }
 
-  readdirSync(path: string): string[] {
+  readdirSync(path: string): string[] | Error {
     const prefix = path.endsWith("/") ? path : `${path}/`
     const names = new Set<string>()
 
@@ -66,7 +69,7 @@ export class MemoryMinionFileSystem extends MinionFileSystem {
   }
 
   /** Returns file paths only (no directory entries), unlike node:fs's recursive readdirSync. */
-  readdirRecursiveSync(path: string): string[] {
+  readdirRecursiveSync(path: string): string[] | Error {
     const prefix = path.endsWith("/") ? path : `${path}/`
     const names: string[] = []
 
@@ -85,8 +88,8 @@ export class MemoryMinionFileSystem extends MinionFileSystem {
     return true
   }
 
-  statSync(path: string): MinionFileStat {
-    if (!this.files.has(path)) throw new Error(`not found: ${path}`)
+  statSync(path: string): MinionFileStat | Error {
+    if (!this.files.has(path)) return new Error(`not found: ${path}`)
     const mtimeMs = this.mtimes.get(path)
     if (mtimeMs === undefined) this.touch(path)
     return { mtimeMs: this.mtimes.get(path) ?? this.now() }

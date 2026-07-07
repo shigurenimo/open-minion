@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest"
 import { MemoryMinionFileSystem } from "@lib/engine/fs/memory-file-system"
 import { MemoryMinionProcessRunner } from "@lib/engine/process/memory-process-runner"
 import { resolveMinionPaths } from "@lib/engine/app/app-paths"
-import { MinionAppRunner } from "@lib/engine/app/app-runner"
+import { type MinionAppEvent, MinionAppRunner } from "@lib/engine/app/app-runner"
 
 function setup(files: Record<string, string> = {}) {
   const fs = new MemoryMinionFileSystem({
@@ -10,22 +10,25 @@ function setup(files: Record<string, string> = {}) {
   })
   const process = new MemoryMinionProcessRunner()
   const paths = resolveMinionPaths({ packageRoot: "/pkg", dataDir: "/data" })
+  const events: MinionAppEvent[] = []
   const runner = new MinionAppRunner({
     fs,
     process,
     paths,
     gatewayCommand: ["bun", "/pkg/gateway.ts"],
+    onEvent: (event) => events.push(event),
   })
-  return { fs, process, paths, runner }
+  return { fs, process, paths, runner, events }
 }
 
 describe("MinionAppRunner.start", () => {
   it("builds and spawns on first release start, and spawns the gateway", async () => {
-    const { fs, process, paths, runner } = setup()
+    const { fs, process, paths, runner, events } = setup()
 
-    const message = await runner.start(false)
+    const result = await runner.start()
 
-    expect(message).toMatch(/^起動した \(pid \d+\)$/)
+    expect(result).toEqual({ kind: "started", pid: expect.any(Number) })
+    expect(events).toEqual([{ type: "build-start", build: "release" }])
     expect(fs.existsSync(paths.pidFile)).toBe(true)
     expect(fs.existsSync(paths.gatewayPidFile)).toBe(true)
     expect(process.calls.some((c) => c.kind === "runInherit")).toBe(true)
@@ -38,11 +41,11 @@ describe("MinionAppRunner.start", () => {
     const { process, runner } = setup()
     process.onIsAlive(() => true)
 
-    const first = await runner.start(false)
-    expect(first).toMatch(/^起動した/)
+    const first = await runner.start()
+    expect(first).toEqual({ kind: "started", pid: expect.any(Number) })
 
-    const second = await runner.start(false)
-    expect(second).toMatch(/^すでに起動中 \(pid \d+\)$/)
+    const second = await runner.start()
+    expect(second).toEqual({ kind: "already-running", pid: expect.any(Number) })
   })
 
   it("refuses to start when the lock is already held by a concurrent call", async () => {
@@ -57,18 +60,18 @@ describe("MinionAppRunner.start", () => {
       gatewayCommand: ["bun", "/pkg/gateway.ts"],
     })
 
-    const message = await runner.start(false)
+    const result = await runner.start()
 
-    expect(message).toBe("他の起動処理と競合したため中止")
+    expect(result).toEqual({ kind: "lock-conflict" })
   })
 
   it("reports build failure and clears the lock", async () => {
     const { fs, process, paths, runner } = setup()
     process.onRunInherit(() => 1)
 
-    const message = await runner.start(false)
+    const result = await runner.start()
 
-    expect(message).toBe("ビルド失敗")
+    expect(result).toEqual({ kind: "build-failed", build: "release" })
     expect(fs.existsSync(paths.pidFile)).toBe(false)
   })
 
@@ -84,12 +87,12 @@ describe("MinionAppRunner.start", () => {
     const runner = new MinionAppRunner({ fs, process, paths, gatewayCommand: ["bun", "gw"] })
 
     // Prime the recorded build hash by doing a full build once (data.json doesn't exist yet).
-    await runner.start(false)
+    await runner.start()
     process.calls.length = 0
     fs.rmSync(paths.pidFile, { force: true })
     fs.rmSync(paths.gatewayPidFile, { force: true })
 
-    await runner.start(false)
+    await runner.start()
 
     expect(process.calls.some((c) => c.kind === "runInherit")).toBe(false)
   })
@@ -97,11 +100,11 @@ describe("MinionAppRunner.start", () => {
   it("always rebuilds in debug mode regardless of the source hash", async () => {
     const { process, runner } = setup()
 
-    await runner.start(true)
+    await runner.start({ debug: true })
     process.calls.length = 0
     runner.kill()
 
-    await runner.start(true)
+    await runner.start({ debug: true })
 
     expect(process.calls.some((c) => c.kind === "runInherit")).toBe(true)
   })
@@ -109,13 +112,13 @@ describe("MinionAppRunner.start", () => {
   it("does not spawn a second gateway when one is already alive", async () => {
     const { process, runner } = setup()
 
-    await runner.start(false) // app pid 1001, gateway pid 1002 (default incrementing stub)
+    await runner.start() // app pid 1001, gateway pid 1002 (default incrementing stub)
     process.onIsAlive((pid) => pid === 1002) // gateway still alive, app pid considered dead
     const gatewaySpawnsBefore = process.calls.filter(
       (c) => c.kind === "spawnDetached" && c.command[0] === "bun",
     ).length
 
-    await runner.start(false)
+    await runner.start()
 
     const gatewaySpawnsAfter = process.calls.filter(
       (c) => c.kind === "spawnDetached" && c.command[0] === "bun",
@@ -127,27 +130,27 @@ describe("MinionAppRunner.start", () => {
 describe("MinionAppRunner.kill", () => {
   it("reports not running when there is no pid file", () => {
     const { runner } = setup()
-    expect(runner.kill()).toBe("起動していない")
+    expect(runner.kill()).toEqual({ kind: "not-running" })
   })
 
   it("cleans up a stale pid file whose process is dead", () => {
     const paths = resolveMinionPaths({ packageRoot: "/pkg", dataDir: "/data" })
     const { fs, runner } = setup({ [paths.pidFile]: "123" })
 
-    const message = runner.kill()
+    const result = runner.kill()
 
-    expect(message).toBe("起動していない")
+    expect(result).toEqual({ kind: "not-running" })
     expect(fs.existsSync(paths.pidFile)).toBe(false)
   })
 
   it("kills a running process and removes the pid file", async () => {
     const { fs, process, paths, runner } = setup()
     process.onIsAlive(() => true)
-    await runner.start(false)
+    await runner.start()
 
-    const message = runner.kill()
+    const result = runner.kill()
 
-    expect(message).toMatch(/^停止した \(pid \d+\)$/)
+    expect(result).toEqual({ kind: "killed", pid: expect.any(Number) })
     expect(fs.existsSync(paths.pidFile)).toBe(false)
     expect(process.killed.length).toBeGreaterThan(0)
   })
@@ -156,15 +159,20 @@ describe("MinionAppRunner.kill", () => {
 describe("MinionAppRunner.status", () => {
   it("reports both app and gateway as stopped by default", () => {
     const { runner } = setup()
-    expect(runner.status()).toBe("停止中\ngateway停止中")
+    expect(runner.status()).toEqual({
+      app: { running: false, pid: null },
+      gateway: { running: false, pid: null },
+    })
   })
 
   it("reports both as running once started", async () => {
     const { process, runner } = setup()
     process.onIsAlive(() => true)
 
-    await runner.start(false)
+    await runner.start()
 
-    expect(runner.status()).toMatch(/^起動中 \(pid \d+\)\ngateway起動中 \(pid \d+\)$/)
+    const status = runner.status()
+    expect(status.app).toEqual({ running: true, pid: expect.any(Number) })
+    expect(status.gateway).toEqual({ running: true, pid: expect.any(Number) })
   })
 })

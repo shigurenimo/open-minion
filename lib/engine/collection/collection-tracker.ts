@@ -8,9 +8,16 @@ import {
 import type { StatsSnapshot } from "@lib/engine/stats/stats-snapshot"
 
 export type CollectionEvaluation = {
+  /** The one species manifesting right now — the first (= highest-priority) catalog match. */
   species: MinionSpecies
   newlyUnlockedAchievements: Achievement[]
-  newlyDiscoveredSpecies: MinionSpecies | null
+  /**
+   * Every species whose condition holds right now and wasn't discovered
+   * before — not just the manifesting one. A permanently-true high-priority
+   * species (e.g. a lifetime-token rare) would otherwise mask everything
+   * below it forever and make completing the dex impossible.
+   */
+  newlyDiscoveredSpecies: MinionSpecies[]
 }
 
 export type AchievementDexEntry = Achievement & { unlocked: boolean; unlockedAt: string | null }
@@ -41,17 +48,30 @@ export class MinionCollectionTracker {
     this.achievements = props.achievements ?? DEFAULT_ACHIEVEMENTS
   }
 
-  /** Evaluates `stats` against every achievement/species condition, persisting anything newly earned. */
-  evaluate(stats: StatsSnapshot): CollectionEvaluation {
+  /**
+   * Evaluates `stats` against every achievement/species condition, persisting
+   * anything newly earned. Returns an Error when the catalog resolves no
+   * species (non-covering custom catalog) or persisting an unlock fails.
+   */
+  evaluate(stats: StatsSnapshot): CollectionEvaluation | Error {
     const species = resolveSpecies(stats, this.species)
+    if (species instanceof Error) return species
 
-    const newlyUnlockedAchievements = this.achievements
-      .filter((achievement) => achievement.condition(stats))
-      .filter((achievement) => this.store.unlockAchievement(achievement.id, stats.now))
+    const newlyUnlockedAchievements: Achievement[] = []
+    for (const achievement of this.achievements) {
+      if (!achievement.condition(stats)) continue
+      const unlocked = this.store.unlockAchievement(achievement.id, stats.now)
+      if (unlocked instanceof Error) return unlocked
+      if (unlocked) newlyUnlockedAchievements.push(achievement)
+    }
 
-    const newlyDiscoveredSpecies = this.store.discoverSpecies(species.id, stats.now)
-      ? species
-      : null
+    const newlyDiscoveredSpecies: MinionSpecies[] = []
+    for (const candidate of this.species) {
+      if (!candidate.condition(stats)) continue
+      const discovered = this.store.discoverSpecies(candidate.id, stats.now)
+      if (discovered instanceof Error) return discovered
+      if (discovered) newlyDiscoveredSpecies.push(candidate)
+    }
 
     return { species, newlyUnlockedAchievements, newlyDiscoveredSpecies }
   }

@@ -18,6 +18,7 @@ describe("MinionGatewayServer.routes", () => {
       clock: new MemoryMinionClock(),
       random: new MemoryMinionRandomSource(),
       sessionsDir: SESSIONS_DIR,
+      projectsDir: "/home/.claude/projects",
     })
 
     const res = await server.routes.request("/sessions")
@@ -33,6 +34,7 @@ describe("MinionGatewayServer.routes", () => {
       clock: new MemoryMinionClock(),
       random: new MemoryMinionRandomSource(),
       sessionsDir: SESSIONS_DIR,
+      projectsDir: "/home/.claude/projects",
     })
 
     const res = await server.routes.request("/nope")

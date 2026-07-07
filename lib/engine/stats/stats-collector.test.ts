@@ -9,6 +9,11 @@ import { MinionStatsCollector } from "@lib/engine/stats/stats-collector"
 const SESSIONS_DIR = "/home/.claude/sessions"
 const PROJECTS_DIR = "/home/.claude/projects"
 
+function must<T>(value: T | Error): T {
+  if (value instanceof Error) throw value
+  return value
+}
+
 function usageLine(input: number, output: number, date: string): string {
   return JSON.stringify({
     message: { usage: { input_tokens: input, output_tokens: output } },
@@ -26,8 +31,14 @@ function collector(
     process,
     clock,
     sessionsDir: SESSIONS_DIR,
+    projectsDir: PROJECTS_DIR,
     sessionStats: new SessionStatsTracker({ fs, path: "/data/session-stats.json" }),
-    tokenUsage: new TokenUsageTracker({ fs, path: "/data/usage.json", projectsDir: PROJECTS_DIR }),
+    tokenUsage: new TokenUsageTracker({
+      fs,
+      clock,
+      path: "/data/usage.json",
+      projectsDir: PROJECTS_DIR,
+    }),
   })
 }
 
@@ -36,7 +47,7 @@ describe("MinionStatsCollector", () => {
     // Constructed via local-time fields (not a UTC ISO string) so `hour` is
     // stable regardless of which timezone the test runs in.
     const clock = new MemoryMinionClock({ start: new Date(2026, 6, 6, 21, 30, 0) })
-    const snapshot = collector(new MemoryMinionFileSystem(), clock).collect()
+    const snapshot = must(collector(new MemoryMinionFileSystem(), clock).collect())
 
     expect(snapshot.currentConcurrentSessions).toBe(0)
     expect(snapshot.maxConcurrentSessions).toBe(0)
@@ -67,7 +78,7 @@ describe("MinionStatsCollector", () => {
     process.setAlivePids([1, 2])
     const stats = collector(fs, clock, process)
 
-    const snapshot = stats.collect()
+    const snapshot = must(stats.collect())
 
     expect(snapshot.currentConcurrentSessions).toBe(2)
     expect(snapshot.totalSessionsSeen).toBe(2)
@@ -89,7 +100,7 @@ describe("MinionStatsCollector", () => {
     })
     const stats = collector(fs, clock)
 
-    const snapshot = stats.collect()
+    const snapshot = must(stats.collect())
 
     expect(snapshot.tokensTotal).toBe(165)
     expect(snapshot.tokensThisWeek).toBe(15)
@@ -110,7 +121,7 @@ describe("MinionStatsCollector", () => {
     const process = new MemoryMinionProcessRunner()
     process.setAlivePids([1])
 
-    const snapshot = collector(fs, clock, process).collect()
+    const snapshot = must(collector(fs, clock, process).collect())
 
     expect(snapshot.uniqueProjectsSeen).toBe(1)
   })
@@ -126,7 +137,7 @@ describe("MinionStatsCollector", () => {
     const process = new MemoryMinionProcessRunner()
     process.setAlivePids([1])
     const stats = collector(fs, clock, process)
-    stats.collect()
+    must(stats.collect())
 
     const snapshot = stats.peek()
 

@@ -1,7 +1,13 @@
 import { describe, expect, it } from "vitest"
 import { MemoryMinionFileSystem } from "@lib/engine/fs/memory-file-system"
 import { MemoryMinionProcessRunner } from "@lib/engine/process/memory-process-runner"
+import { MemoryMinionClock } from "@lib/engine/time/memory-clock"
 import { Minion } from "@lib/minion"
+
+function must<T>(value: T | Error): T {
+  if (value instanceof Error) throw value
+  return value
+}
 
 describe("Minion.inMemory", () => {
   it("roots state under the sandbox data dir, not the real home directory", () => {
@@ -14,6 +20,7 @@ describe("Minion.inMemory", () => {
     const minion = Minion.inMemory()
     minion.config.set("greeting", "hello")
     expect(minion.config.get("greeting")).toBe("hello")
+    expect(minion.config.get("missing")).toBeUndefined()
     expect(minion.config.list()).toEqual({ greeting: "hello" })
   })
 
@@ -24,14 +31,16 @@ describe("Minion.inMemory", () => {
     const process = new MemoryMinionProcessRunner()
     const minion = Minion.inMemory({ fs, process })
 
-    const startMessage = await minion.app.start(false)
-    expect(startMessage).toMatch(/^起動した \(pid \d+\)$/)
+    const startResult = await minion.app.start()
+    expect(startResult).toEqual({ kind: "started", pid: expect.any(Number) })
 
     process.onIsAlive(() => true)
-    expect(minion.app.status()).toMatch(/^起動中 \(pid \d+\)\ngateway起動中 \(pid \d+\)$/)
+    const status = minion.app.status()
+    expect(status.app).toEqual({ running: true, pid: expect.any(Number) })
+    expect(status.gateway).toEqual({ running: true, pid: expect.any(Number) })
 
-    const killMessage = minion.app.kill()
-    expect(killMessage).toMatch(/^停止した \(pid \d+\)$/)
+    const killResult = minion.app.kill()
+    expect(killResult).toEqual({ kind: "killed", pid: expect.any(Number) })
   })
 
   it("builds a gateway server whose routes reflect the facade's own dependencies", async () => {
@@ -43,10 +52,15 @@ describe("Minion.inMemory", () => {
   })
 
   it("collects stats and evaluates the collection through the facade", () => {
-    const minion = Minion.inMemory()
+    // Pinned clock: the sandbox default (epoch 0) lands on 1969-12-31 in
+    // negative-offset timezones, which resolves the rare month-end species
+    // instead of a time-of-day common.
+    const minion = Minion.inMemory({
+      clock: new MemoryMinionClock({ start: new Date(2026, 6, 6, 13, 0) }),
+    })
 
-    const stats = minion.stats.collect()
-    const evaluation = minion.collection.evaluate(stats)
+    const stats = must(minion.stats.collect())
+    const evaluation = must(minion.collection.evaluate(stats))
 
     // Baseline sandbox stats always resolve to a common time-of-day species.
     expect(evaluation.species.rarity).toBe("common")
@@ -77,7 +91,7 @@ describe("Minion.inMemory", () => {
       ],
     })
 
-    const evaluation = minion.collection.evaluate(minion.stats.collect())
+    const evaluation = must(minion.collection.evaluate(must(minion.stats.collect())))
 
     expect(evaluation.species.id).toBe("custom")
     expect(evaluation.species.asset).toBe("sprites/custom.png")
