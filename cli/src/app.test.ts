@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest"
 import { app } from "@/app"
 import { postJson } from "@/lib/post-json"
 import { MemoryMinionFileSystem } from "@lib/engine/fs/memory-file-system"
+import { MemoryMinionProcessRunner } from "@lib/engine/process/memory-process-runner"
 import { Minion } from "@lib/minion"
 
 describe("app routes", () => {
@@ -23,6 +24,22 @@ describe("app routes", () => {
 
     expect(res.status).toBe(200)
     expect(await res.text()).toMatch(/^起動した \(pid \d+\)$/)
+  })
+
+  it("kills the old process and starts fresh when /start finds one running", async () => {
+    const fs = new MemoryMinionFileSystem({
+      files: { "/sandbox/pkg/swift/Package.swift": "// package" },
+    })
+    const process = new MemoryMinionProcessRunner()
+    const minion = Minion.inMemory({ fs, process })
+    await app.request("/start", postJson({}), { minion })
+    // 1回目のstartが生んだ app + gateway のpidを生存扱いにする
+    process.setAlivePids([1001, 1002])
+
+    const res = await app.request("/start", postJson({}), { minion })
+
+    expect(res.status).toBe(200)
+    expect(await res.text()).toMatch(/^停止した \(pid 1001\)\n起動した \(pid \d+\)$/)
   })
 
   it("round-trips a value through /config/set and /config/get", async () => {

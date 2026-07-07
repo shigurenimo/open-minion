@@ -20,7 +20,7 @@ Usage:
   minion <command> -h          Show help for a command
 
 Commands:
-  start                     起動する (デフォルト)
+  start                     古いプロセスを止めて起動する (デフォルト)
   dev                       停止してデバッグビルドで起動し直す
   kill                      停止する
   reboot                    停止してリリースビルドで起動し直す
