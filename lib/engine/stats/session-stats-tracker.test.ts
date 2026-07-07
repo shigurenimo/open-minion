@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest"
-import { MemoryMinionFileSystem } from "../fs/memory-file-system"
-import { SessionStatsTracker } from "./session-stats-tracker"
-import type { SessionInfo } from "../gateway/sessions"
+import { MemoryMinionFileSystem } from "../fs/memory-file-system.ts"
+import { SessionStatsTracker } from "./session-stats-tracker.ts"
+import type { SessionInfo } from "../gateway/sessions.ts"
 
 function must<T>(value: T | Error): T {
   if (value instanceof Error) throw value

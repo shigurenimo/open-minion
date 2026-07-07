@@ -11,55 +11,82 @@
   "license": "MIT",
   "author": "shigurenimo",
   "bin": {
-    "minion": "cli/src/index.ts"
+    "minion": "dist/cli/src/index.js"
   },
   "files": [
-    "cli/src",
-    "lib",
+    "dist",
     "swift",
-    "tsconfig.json",
-    "!cli/src/**/*.test.ts",
-    "!lib/**/*.test.ts",
     "!swift/.build"
   ],
   "type": "module",
   "sideEffects": false,
-  "main": "./lib/index.ts",
-  "types": "./lib/index.ts",
+  "main": "./dist/lib/index.js",
+  "types": "./dist/lib/index.d.ts",
   "exports": {
-    ".": "./lib/index.ts",
-    "./app": "./lib/app.ts",
-    "./boundaries": "./lib/boundaries.ts",
-    "./cli": "./cli/src/cli.ts",
-    "./collection": "./lib/collection.ts",
-    "./config": "./lib/config.ts",
-    "./discord": "./lib/discord.ts",
-    "./gateway": "./lib/gateway.ts",
-    "./stats": "./lib/stats.ts",
+    ".": {
+      "types": "./dist/lib/index.d.ts",
+      "default": "./dist/lib/index.js"
+    },
+    "./app": {
+      "types": "./dist/lib/app.d.ts",
+      "default": "./dist/lib/app.js"
+    },
+    "./boundaries": {
+      "types": "./dist/lib/boundaries.d.ts",
+      "default": "./dist/lib/boundaries.js"
+    },
+    "./cli": {
+      "types": "./dist/cli/src/cli.d.ts",
+      "default": "./dist/cli/src/cli.js"
+    },
+    "./collection": {
+      "types": "./dist/lib/collection.d.ts",
+      "default": "./dist/lib/collection.js"
+    },
+    "./config": {
+      "types": "./dist/lib/config.d.ts",
+      "default": "./dist/lib/config.js"
+    },
+    "./discord": {
+      "types": "./dist/lib/discord.d.ts",
+      "default": "./dist/lib/discord.js"
+    },
+    "./gateway": {
+      "types": "./dist/lib/gateway.d.ts",
+      "default": "./dist/lib/gateway.js"
+    },
+    "./stats": {
+      "types": "./dist/lib/stats.d.ts",
+      "default": "./dist/lib/stats.js"
+    },
     "./package.json": "./package.json"
   },
   "publishConfig": {
     "access": "public"
   },
   "scripts": {
+    "build": "node -e \"fs.rmSync('dist',{recursive:true,force:true})\" && tsc -p tsconfig.build.json",
+    "prepack": "npm run build",
     "check": "vp check",
     "fmt": "vp fmt",
     "lint": "vp lint",
     "test": "vp test"
   },
   "dependencies": {
+    "@hono/node-server": "^2.0.8",
     "@hono/zod-validator": "^0.7.6",
     "hono": "^4.12.8",
+    "ws": "^8.21.0",
     "zod": "^4.3.6"
   },
   "devDependencies": {
-    "@types/bun": "^1.3.14",
     "@types/node": "^26.1.0",
+    "@types/ws": "^8.18.1",
     "@voidzero-dev/vite-plus-core": "^0.2.2",
     "typescript": "^6.0.3",
     "vite-plus": "^0.2.2"
   },
   "engines": {
-    "bun": ">=1.0.0"
+    "node": ">=22"
   }
 }

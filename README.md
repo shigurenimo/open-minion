@@ -12,14 +12,14 @@ sessions, and day streaks unlock achievements and rare minions in a built-in dex
 ## Requirements
 
 - macOS
-- [Bun](https://bun.sh)
+- [Node.js](https://nodejs.org) 22+
 - Xcode Command Line Tools (`xcode-select --install`) — needed once, to compile
   the pet on first run
 
 ## Quick start
 
 ```sh
-bunx @shigureni/minion
+npx @shigureni/minion
 ```
 
 The first run compiles the pet (takes a minute), then it appears on your screen
@@ -28,7 +28,7 @@ and starts watching your Claude Code sessions. Later runs reuse the build.
 To keep the `minion` command around:
 
 ```sh
-bun add -g @shigureni/minion
+npm install -g @shigureni/minion
 minion
 ```
 
@@ -65,10 +65,10 @@ one server. Setup guide: [.docs/discord.md](.docs/discord.md), then check with
 ## Windows
 
 The Swift overlay is macOS-only, but the gateway and the Discord source run
-anywhere Bun does. On Windows:
+anywhere Node does. On Windows:
 
 ```sh
-bun cli/src/index.ts serve      # runs the gateway in the foreground
+npx @shigureni/minion serve     # runs the gateway in the foreground
 cd electron && npm install && npm start   # the Windows overlay client
 ```
 
@@ -169,10 +169,13 @@ See `lib/index.ts` for the full API surface.
 
 ## Development
 
+Node.js 23.6+ runs the TS sources directly (`node cli/src/index.ts status`);
+`npm run build` emits the published `dist/`.
+
 ```sh
-bun install
-bun run check   # format + lint + type-check
-bun run test
+npm install
+npm run check   # format + lint + type-check
+npm run test
 ```
 
 Architecture notes and contributor conventions live in [CLAUDE.md](CLAUDE.md).

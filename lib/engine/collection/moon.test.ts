@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { isFullMoon, isNewMoon, moonAgeDays } from "./moon"
+import { isFullMoon, isNewMoon, moonAgeDays } from "./moon.ts"
 
 describe("moonAgeDays", () => {
   it("is 0 at the reference new moon", () => {

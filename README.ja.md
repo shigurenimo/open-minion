@@ -11,10 +11,10 @@
 
 ## macOS で動かす
 
-必要なもの: [Bun](https://bun.sh)、Xcode Command Line Tools(`xcode-select --install`)
+必要なもの: [Node.js](https://nodejs.org) 22+、Xcode Command Line Tools(`xcode-select --install`)
 
 ```sh
-bunx @shigureni/minion
+npx @shigureni/minion
 ```
 
 初回はペットのコンパイルに1分ほどかかります。以降の起動はビルドを再利用します。
@@ -22,21 +22,20 @@ bunx @shigureni/minion
 `minion` コマンドを常用するなら:
 
 ```sh
-bun add -g @shigureni/minion
+npm install -g @shigureni/minion
 minion
 ```
 
 ## Windows で動かす
 
 Swift 製のオーバーレイは macOS 専用なので、Windows では gateway(サーバー)と
-Electron クライアントの2つを起動します。必要なもの: [Bun](https://bun.sh)、
-[Node.js / npm](https://nodejs.org)
+Electron クライアントの2つを起動します。必要なものは [Node.js](https://nodejs.org) 22+ だけです。
 
 ```sh
-# ターミナル1: gateway を起動 (リポジトリのルートで)
-bun cli/src/index.ts serve
+# ターミナル1: gateway を起動
+npx @shigureni/minion serve
 
-# ターミナル2: ペットの描画クライアントを起動
+# ターミナル2: ペットの描画クライアントを起動 (リポジトリの electron/ で)
 cd electron
 npm install   # 初回のみ
 npm start
@@ -67,7 +66,7 @@ npm start
 `minion config set discord.enabled false` で Discord 連携を設定を残したまま止めます。
 
 グローバルインストールしていない場合は、`minion` の部分を
-`bun cli/src/index.ts` に読み替えてください(例: `bun cli/src/index.ts status`)。
+`npx @shigureni/minion` に読み替えてください(例: `npx @shigureni/minion status`)。
 
 ## Discord のフレンドをペットにする
 
@@ -112,10 +111,13 @@ npm start
 
 ## 開発
 
+Node.js 23.6+ なら TS ソースを直接実行できます(`node cli/src/index.ts status`)。
+配布物は `npm run build` が `dist/` に出力します。
+
 ```sh
-bun install
-bun run check   # フォーマット + lint + 型チェック
-bun run test
+npm install
+npm run check   # フォーマット + lint + 型チェック
+npm run test
 ```
 
 設計メモとコントリビュート規約は [CLAUDE.md](CLAUDE.md)(英語)にあります。

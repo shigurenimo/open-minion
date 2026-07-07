@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { readGatewaySnapshot, type MinionFetch } from "./gateway-probe"
+import { readGatewaySnapshot, type MinionFetch } from "./gateway-probe.ts"
 
 function fetchReturning(body: unknown, init: { ok?: boolean; status?: number } = {}): MinionFetch {
   return async () => ({

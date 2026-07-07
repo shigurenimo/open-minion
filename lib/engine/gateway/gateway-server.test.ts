@@ -1,16 +1,24 @@
 import { describe, expect, it } from "vitest"
-import { MemoryMinionClock } from "../time/memory-clock"
-import { MemoryMinionRandomSource } from "../random/memory-random-source"
-import { MinionGatewayServer } from "./gateway-server"
+import { MemoryMinionClock } from "../time/memory-clock.ts"
+import { MemoryMinionRandomSource } from "../random/memory-random-source.ts"
+import { PetSource } from "./pet-source.ts"
+import type { SessionInfo } from "./sessions.ts"
+import { MinionGatewayServer } from "./gateway-server.ts"
 
-// `.start()` wraps a real `Bun.serve` and isn't exercised here — this suite
-// runs under Node (vitest), where the `Bun` global doesn't exist. `.routes`
-// is the plain Hono app underneath, so it's fully testable without Bun.
-function server(): MinionGatewayServer {
+class OnePetSource extends PetSource {
+  read(): Map<string, SessionInfo> {
+    return new Map([["a", { running: true, name: "repo" }]])
+  }
+}
+
+function server(sources: PetSource[] = []): MinionGatewayServer {
   return new MinionGatewayServer({
     clock: new MemoryMinionClock(),
     random: new MemoryMinionRandomSource(),
-    sources: [],
+    sources,
+    // テストが tick タイマーに追い越されないよう十分長く
+    tickMs: 60_000,
+    port: 0,
   })
 }
 
@@ -26,5 +34,48 @@ describe("MinionGatewayServer.routes", () => {
     const res = await server().routes.request("/nope")
 
     expect(res.status).toBe(404)
+  })
+})
+
+describe("MinionGatewayServer.start", () => {
+  it("binds a real HTTP + WS server, snapshots over both, and stops cleanly", async () => {
+    const handle = await server([new OnePetSource()]).start()
+    expect(handle).not.toBeInstanceOf(Error)
+    if (handle instanceof Error) return
+
+    const res = await fetch(`http://127.0.0.1:${handle.port}/sessions`)
+    expect(res.status).toBe(200)
+    const body = (await res.json()) as { sessions: { id: string; state: string }[] }
+    expect(body.sessions).toEqual([
+      { id: "a", state: "running", clipIndex: expect.any(Number), name: "repo" },
+    ])
+
+    const firstFrame = await new Promise<unknown>((resolve, reject) => {
+      const ws = new WebSocket(`ws://127.0.0.1:${handle.port}/ws`)
+      ws.addEventListener("message", (event) => {
+        resolve(JSON.parse(String(event.data)))
+        ws.close()
+      })
+      ws.addEventListener("error", () => reject(new Error("ws error")))
+    })
+    expect(firstFrame).toMatchObject({ sessions: [{ id: "a", state: "running" }] })
+
+    handle.stop()
+  })
+
+  it("resolves to an Error (not a rejection) when the port is already taken", async () => {
+    const first = await server().start()
+    expect(first).not.toBeInstanceOf(Error)
+    if (first instanceof Error) return
+
+    const second = await new MinionGatewayServer({
+      clock: new MemoryMinionClock(),
+      random: new MemoryMinionRandomSource(),
+      sources: [],
+      port: first.port,
+    }).start()
+
+    expect(second).toBeInstanceOf(Error)
+    first.stop()
   })
 })

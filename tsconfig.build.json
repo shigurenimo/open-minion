@@ -1,0 +1,14 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
+    "outDir": "dist",
+    "rootDir": ".",
+    "declaration": true,
+    "rewriteRelativeImportExtensions": true
+  },
+  "include": ["cli/src", "lib"],
+  "exclude": ["**/*.test.ts"]
+}

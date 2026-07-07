@@ -5,7 +5,7 @@ import type {
   DiscordMember,
   DiscordPresenceData,
   DiscordPresenceUpdateData,
-} from "./gateway-payloads"
+} from "./gateway-payloads.ts"
 
 /** Discord activity type 0 = "Playing <game>". */
 const ACTIVITY_TYPE_PLAYING = 0

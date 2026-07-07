@@ -1,5 +1,5 @@
-import { isFullMoon, isNewMoon } from "./moon"
-import type { StatsSnapshot } from "../stats/stats-snapshot"
+import { isFullMoon, isNewMoon } from "./moon.ts"
+import type { StatsSnapshot } from "../stats/stats-snapshot.ts"
 
 export type MinionRarity = "common" | "rare"
 

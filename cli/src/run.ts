@@ -1,11 +1,13 @@
+import { existsSync, readFileSync } from "node:fs"
+import { dirname, join } from "node:path"
+import { fileURLToPath } from "node:url"
 import type { Hono } from "hono"
-import { Minion } from "../../lib/minion"
-import { app as defaultApp } from "./app"
-import type { Env } from "./factory"
-import { postJson } from "./lib/post-json"
-import { toRequest } from "./router"
-
-import pkg from "../../package.json" with { type: "json" }
+import { safeJsonParse } from "../../lib/engine/errors.ts"
+import { Minion } from "../../lib/minion.ts"
+import { app as defaultApp } from "./app.ts"
+import type { Env } from "./factory.ts"
+import { postJson } from "./lib/post-json.ts"
+import { toRequest } from "./router.ts"
 
 export const DEFAULT_HELP = `minion - open-minion CLI
 
@@ -69,7 +71,7 @@ export async function runMinionCli(options: RunMinionCliOptions = {}): Promise<v
   const request = toRequest(args)
 
   if (request.global.version) {
-    console.log(options.version ?? pkg.version)
+    console.log(options.version ?? packageVersion())
     return
   }
 
@@ -104,4 +106,25 @@ export async function runMinionCli(options: RunMinionCliOptions = {}): Promise<v
     console.error(error.message)
     process.exitCode = 1
   }
+}
+
+// TS ソース実行時と dist 実行時で package.json への相対位置が変わるため、
+// 自身の場所から一番近い package.json まで遡って version を読む。
+function packageVersion(): string {
+  let dir = dirname(fileURLToPath(import.meta.url))
+  for (let depth = 0; depth < 10; depth++) {
+    const candidate = join(dir, "package.json")
+    if (existsSync(candidate)) {
+      const parsed = safeJsonParse(readFileSync(candidate, "utf8"))
+      if (!(parsed instanceof Error) && typeof parsed === "object" && parsed !== null) {
+        const version = (parsed as { version?: unknown }).version
+        if (typeof version === "string") return version
+      }
+      return "0.0.0"
+    }
+    const parent = dirname(dir)
+    if (parent === dir) break
+    dir = parent
+  }
+  return "0.0.0"
 }

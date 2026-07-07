@@ -4,7 +4,7 @@ export type RunOptions = {
 
 /**
  * Process boundary covering foreground builds, detached background spawns,
- * and liveness checks. Default is NodeMinionProcessRunner (Bun.spawn);
+ * and liveness checks. Default is NodeMinionProcessRunner (node:child_process);
  * MemoryMinionProcessRunner records calls and lets tests stub responses.
  *
  * Fallible operations return `T | Error` (e.g. the executable doesn't exist)

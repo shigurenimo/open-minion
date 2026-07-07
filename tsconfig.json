@@ -6,7 +6,9 @@
     "moduleResolution": "bundler",
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "types": ["node", "bun"]
+    "types": ["node"],
+    "noEmit": true,
+    "allowImportingTsExtensions": true
   },
   "include": ["cli/src", "lib"]
 }

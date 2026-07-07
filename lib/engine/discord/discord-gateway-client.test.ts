@@ -1,10 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
-import { MemoryMinionRandomSource } from "../random/memory-random-source"
-import { DiscordGatewayClient } from "./discord-gateway-client"
+import { MemoryMinionRandomSource } from "../random/memory-random-source.ts"
+import { DiscordGatewayClient } from "./discord-gateway-client.ts"
 import {
   MemoryMinionWebSocketFactory,
   type MemoryMinionWebSocketConnection,
-} from "./memory-websocket-factory"
+} from "./memory-websocket-factory.ts"
 
 const HELLO = { op: 10, s: null, t: null, d: { heartbeat_interval: 41250 } }
 const READY = {

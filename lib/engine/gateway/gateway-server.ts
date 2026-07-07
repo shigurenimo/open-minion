@@ -1,10 +1,12 @@
+import { serve } from "@hono/node-server"
 import type { Hono } from "hono"
-import { toError } from "../errors"
-import type { MinionClock } from "../time/clock"
-import type { MinionRandomSource } from "../random/random-source"
-import { buildGatewayRoutes } from "./gateway-routes"
-import { PetBehaviorEngine } from "./pet-behavior"
-import { mergePetSources, type PetSource } from "./pet-source"
+import { WebSocketServer } from "ws"
+import { toError } from "../errors.ts"
+import type { MinionClock } from "../time/clock.ts"
+import type { MinionRandomSource } from "../random/random-source.ts"
+import { buildGatewayRoutes } from "./gateway-routes.ts"
+import { PetBehaviorEngine } from "./pet-behavior.ts"
+import { mergePetSources, type PetSource } from "./pet-source.ts"
 
 export const DEFAULT_GATEWAY_PORT = 4756
 const DEFAULT_TICK_MS = 250
@@ -29,13 +31,12 @@ export type MinionGatewayHandle = {
 }
 
 /**
- * In-process HTTP + WebSocket server that watches the sessions directory and
+ * In-process HTTP + WebSocket server that merges the pet sources and
  * broadcasts each pet's animation state. `.routes` (the `/sessions` JSON
- * endpoint) is a plain Hono app testable via `.request()`; `.start()` wraps
- * it plus the `/ws` upgrade in a real `Bun.serve` — like the IO boundaries
- * this class composes, that call is a genuine runtime dependency rather than
- * something behind an interface, so pass `port: 0` to bind an ephemeral port
- * when a test does need a live server.
+ * endpoint) is a plain Hono app testable via `.request()`; `.start()` binds
+ * a real `node:http` server (via @hono/node-server) plus a `ws` upgrade at
+ * `/ws`. Pass `port: 0` to bind an ephemeral port when a test needs a live
+ * server.
  */
 export class MinionGatewayServer {
   readonly routes: Hono
@@ -56,15 +57,19 @@ export class MinionGatewayServer {
     this.routes = buildGatewayRoutes(this.engine)
   }
 
-  /** Binds the real server. Returns an Error (instead of throwing) when the port is taken or binding fails. */
-  start(): MinionGatewayHandle | Error {
+  /**
+   * Binds the real server. Resolves to an Error (instead of throwing or
+   * rejecting) when the port is taken or binding fails — `node:http` reports
+   * bind failures asynchronously, hence the Promise.
+   */
+  async start(): Promise<MinionGatewayHandle | Error> {
     const engine = this.engine
     const routes = this.routes
-    const clients = new Set<{ send: (data: string) => void }>()
 
+    const wss = new WebSocketServer({ noServer: true })
     const broadcast = (): void => {
       const payload = JSON.stringify({ sessions: engine.snapshot() })
-      for (const ws of clients) ws.send(payload)
+      for (const ws of wss.clients) ws.send(payload)
     }
 
     const tick = (): void => {
@@ -76,42 +81,50 @@ export class MinionGatewayServer {
     const interval = setInterval(tick, this.tickMs)
     tick()
 
+    const cleanup = (): void => {
+      clearInterval(interval)
+      for (const source of this.sources) source.stop()
+    }
+
     try {
-      const server = Bun.serve({
-        port: this.port,
-        fetch(req, srv) {
-          const url = new URL(req.url)
-          if (url.pathname === "/ws") {
-            if (srv.upgrade(req)) return undefined
-            return new Response("upgrade failed", { status: 400 })
-          }
-          return routes.fetch(req)
-        },
-        websocket: {
-          open(ws) {
-            clients.add(ws)
-            ws.send(JSON.stringify({ sessions: engine.snapshot() }))
-          },
-          close(ws) {
-            clients.delete(ws)
-          },
-          message() {
-            // クライアントからのメッセージは使わない
-          },
-        },
+      const server = serve({ fetch: routes.fetch, port: this.port, hostname: "127.0.0.1" })
+
+      server.on("upgrade", (request, socket, head) => {
+        const pathname = (request.url ?? "").split("?")[0]
+        if (pathname !== "/ws") {
+          socket.destroy()
+          return
+        }
+        wss.handleUpgrade(request, socket, head, (ws) => {
+          ws.send(JSON.stringify({ sessions: engine.snapshot() }))
+          // クライアントからのメッセージは使わない。close は wss.clients が追跡する。
+        })
       })
 
+      const bound = await new Promise<number | Error>((resolve) => {
+        server.once("error", (err) => resolve(toError(err)))
+        server.once("listening", () => {
+          const address = server.address()
+          resolve(typeof address === "object" && address !== null ? address.port : this.port)
+        })
+      })
+      if (bound instanceof Error) {
+        cleanup()
+        return bound
+      }
+
       return {
-        port: server.port ?? this.port,
+        port: bound,
         stop: () => {
-          clearInterval(interval)
-          for (const source of this.sources) source.stop()
-          void server.stop(true)
+          cleanup()
+          for (const ws of wss.clients) ws.terminate()
+          wss.close()
+          server.close()
+          if ("closeAllConnections" in server) server.closeAllConnections()
         },
       }
     } catch (thrown) {
-      clearInterval(interval)
-      for (const source of this.sources) source.stop()
+      cleanup()
       return toError(thrown)
     }
   }

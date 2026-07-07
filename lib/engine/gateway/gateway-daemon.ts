@@ -1,10 +1,10 @@
-#!/usr/bin/env bun
-import { Minion } from "../../minion"
+#!/usr/bin/env node
+import { Minion } from "../../minion.ts"
 
 const minion = new Minion()
 const port = Number(process.env.MINION_GATEWAY_PORT) || undefined
 
-const handle = minion.gatewayServer({ port }).start()
+const handle = await minion.gatewayServer({ port }).start()
 
 if (handle instanceof Error) {
   console.error(`gateway failed to start: ${handle.message}`)

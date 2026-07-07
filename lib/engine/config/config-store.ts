@@ -1,7 +1,7 @@
 import { dirname } from "node:path"
 import { z } from "zod"
-import type { MinionFileSystem } from "../fs/file-system"
-import { JsonFileStore } from "../fs/json-file-store"
+import type { MinionFileSystem } from "../fs/file-system.ts"
+import { JsonFileStore } from "../fs/json-file-store.ts"
 
 type Props = {
   fs: MinionFileSystem

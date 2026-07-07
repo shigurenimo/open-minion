@@ -1,4 +1,4 @@
-import { MinionClock } from "./clock"
+import { MinionClock } from "./clock.ts"
 
 type Props = {
   start?: Date

@@ -24,12 +24,12 @@
 //   @shigureni/minion/cli         assemble the `minion` CLI with your own commands
 
 // Facade
-export * from "./minion"
+export * from "./minion.ts"
 
-export * from "./boundaries"
-export * from "./config"
-export * from "./app"
-export * from "./gateway"
-export * from "./discord"
-export * from "./stats"
-export * from "./collection"
+export * from "./boundaries.ts"
+export * from "./config.ts"
+export * from "./app.ts"
+export * from "./gateway.ts"
+export * from "./discord.ts"
+export * from "./stats.ts"
+export * from "./collection.ts"

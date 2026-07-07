@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
-import { MemoryMinionFileSystem } from "../fs/memory-file-system"
-import { computeSourceHash } from "./source-hash"
+import { MemoryMinionFileSystem } from "../fs/memory-file-system.ts"
+import { computeSourceHash } from "./source-hash.ts"
 
 function fsWith(files: Record<string, string>): MemoryMinionFileSystem {
   return new MemoryMinionFileSystem({ files })

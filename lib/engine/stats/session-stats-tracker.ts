@@ -1,8 +1,8 @@
 import { z } from "zod"
-import type { MinionFileSystem } from "../fs/file-system"
-import { JsonFileStore } from "../fs/json-file-store"
-import type { SessionInfo } from "../gateway/sessions"
-import { isNextDay } from "./date-window"
+import type { MinionFileSystem } from "../fs/file-system.ts"
+import { JsonFileStore } from "../fs/json-file-store.ts"
+import type { SessionInfo } from "../gateway/sessions.ts"
+import { isNextDay } from "./date-window.ts"
 
 /**
  * Per-field `.catch()` defaults double as the schema-evolution backfill: a

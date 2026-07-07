@@ -3,21 +3,29 @@
 Desktop pet that reacts to Claude Code sessions and Discord friend presence. Four parts:
 
 - `swift/` — the macOS overlay app (Swift Package) that draws the pet
-- `electron/` — the Windows overlay client (independent package, npm/Node — Electron's main process can't run under Bun)
+- `electron/` — the Windows overlay client (independent package with its own package.json)
 - `lib/` — the programmable API (`@shigureni/minion`); all business logic lives here
 - `cli/` — thin hono-routed CLI that consumes the `Minion` facade
+
+Runtime is Node (engines >=22). Dev runs the TS sources directly via Node's
+type stripping (23.6+): `node cli/src/index.ts <command>`. `npm run build`
+(tsc + `rewriteRelativeImportExtensions`) emits `dist/`, which is what the
+published bin / exports / npx run — hence every relative import carries an
+explicit `.ts` extension; keep that convention or both Node-direct execution
+and the build break.
 
 ## Commands
 
 ```sh
-bun run check   # fmt + lint + type-check (vite-plus) — run before finishing
-                # (electron/ is excluded: it has its own tsconfig + node_modules)
-bun run test    # vitest
-bun run fmt     # auto-fix formatting — run after editing
+npm run check   # fmt + lint + type-check (vite-plus) — run before finishing
+                # (electron/ and dist/ are excluded; electron has its own tsconfig + node_modules)
+npm run test    # vitest
+npm run build   # tsc -> dist/ (what npx/the published bin actually runs)
+npm run fmt     # auto-fix formatting — run after editing
 ```
 
-Imports are plain relative paths (no aliases) — the published TS source must
-resolve under any toolchain, not just Bun.
+Imports are plain relative paths with explicit `.ts` extensions (no aliases) —
+required for Node-direct execution and rewritten to `.js` at build time.
 
 ## lib/ — the library
 
@@ -38,7 +46,7 @@ class plus a `Node*` (real) and a `Memory*` (test double) implementation:
   plus `MinionFetch` (a plain function prop, no class trio) for the one HTTP probe
   (`Minion.gatewaySnapshot()` → `gateway-probe.ts`)
 
-Domain code never calls `node:fs` / `Bun.spawn` / `Date.now()` / `Math.random()`
+Domain code never calls `node:fs` / `node:child_process` / `Date.now()` / `Math.random()`
 directly — boundaries arrive via constructor props. Persisted JSON state goes
 through `JsonFileStore<T>`, which validates reads against a required zod schema.
 Config lives at `$XDG_CONFIG_HOME/minion/config.json` (default `~/.config/minion`,
@@ -47,11 +55,11 @@ one-time migration copies the pre-0.5 `~/.minion/config.json`); runtime state
 
 **Errors are values, not exceptions.** Nothing in `lib/` throws: fallible
 operations return `T | Error`, checked with `instanceof Error`. The boundary
-implementations (`Node*`, `Bun.serve` in `gateway-server.ts`) catch their
+implementations (`Node*`, the http server in `gateway-server.ts`) catch their
 runtime's exceptions via `toError()` / `safeJsonParse()` (`engine/errors.ts`)
-and convert them at the edge. Don't add `throw` / bare `JSON.parse` /
-uncaught `Bun.*` calls; plumb the Error back to the caller instead. The CLI
-maps an Error result to a 500 (→ stderr + exit 1).
+and convert them at the edge. Don't add `throw` / bare `JSON.parse`; plumb the
+Error back to the caller instead. The CLI maps an Error result to a 500
+(→ stderr + exit 1).
 
 Engine subdirectories:
 
@@ -59,7 +67,7 @@ Engine subdirectories:
   (`resolveMinionPaths`), source-hash-based build skipping
 - `engine/gateway` — session watching (`readActiveSessions`), the `PetSource`
   abstraction merging pet feeds (`pet-source.ts`), the pure pet state
-  machine (`PetBehaviorEngine`), Hono routes, the `Bun.serve` wrapper
+  machine (`PetBehaviorEngine`), Hono routes, the HTTP/WS server
   (`MinionGatewayServer` — source-injected: it builds nothing itself, the
   facade assembles `sources` from config + `MinionOptions.petSources`),
   the HTTP probe of a running gateway (`gateway-probe.ts`), and the
@@ -90,10 +98,12 @@ CLI output text is Japanese; keep it that way.
 
 ## Constraints & gotchas
 
-- **`Bun.serve` is untestable here.** vitest runs under Node, so `Bun` globals
-  don't exist in tests. Keep HTTP logic in plain Hono apps (`gateway-routes.ts`)
-  exercised via `.request()`; only `MinionGatewayServer.start()` may touch
-  `Bun.serve`.
+- **Keep HTTP logic in plain Hono apps.** Routes (`gateway-routes.ts`) are
+  exercised via `.request()`; `MinionGatewayServer.start()` is the only place
+  that binds a real server (@hono/node-server + `ws` upgrade at `/ws`). It is
+  async because `node:http` reports bind failures asynchronously, and it IS
+  testable — pass `port: 0` (see gateway-server.test.ts). The server binds
+  127.0.0.1 only.
 - **Persisted-schema evolution = per-field `.catch()` in the store's zod schema.**
   `JsonFileStore`'s `defaultValue` covers a missing/corrupt/wrong-shape file
   wholesale; a valid-but-outdated file (new field added later) is handled by

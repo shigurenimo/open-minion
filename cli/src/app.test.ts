@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest"
-import { app, createMinionApp, DEFAULT_COMMANDS } from "./app"
-import { factory } from "./factory"
-import { postJson } from "./lib/post-json"
-import { MemoryMinionFileSystem } from "../../lib/engine/fs/memory-file-system"
-import { MemoryMinionProcessRunner } from "../../lib/engine/process/memory-process-runner"
-import { Minion } from "../../lib/minion"
+import { app, createMinionApp, DEFAULT_COMMANDS } from "./app.ts"
+import { factory } from "./factory.ts"
+import { postJson } from "./lib/post-json.ts"
+import { MemoryMinionFileSystem } from "../../lib/engine/fs/memory-file-system.ts"
+import { MemoryMinionProcessRunner } from "../../lib/engine/process/memory-process-runner.ts"
+import { Minion } from "../../lib/minion.ts"
 
 describe("app routes", () => {
   it("returns status text for /status via the injected Minion facade", async () => {

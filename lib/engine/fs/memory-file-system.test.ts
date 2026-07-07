@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { MemoryMinionFileSystem } from "./memory-file-system"
+import { MemoryMinionFileSystem } from "./memory-file-system.ts"
 
 function must<T>(value: T | Error): T {
   if (value instanceof Error) throw value

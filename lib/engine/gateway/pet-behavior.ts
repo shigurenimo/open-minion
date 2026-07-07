@@ -1,5 +1,5 @@
-import type { MinionRandomSource } from "../random/random-source"
-import type { SessionInfo } from "./sessions"
+import type { MinionRandomSource } from "../random/random-source.ts"
+import type { SessionInfo } from "./sessions.ts"
 
 export const IDLE_CLIP = 0
 

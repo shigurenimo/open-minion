@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest"
 import { z } from "zod"
-import { MemoryMinionFileSystem } from "./memory-file-system"
-import { JsonFileStore } from "./json-file-store"
+import { MemoryMinionFileSystem } from "./memory-file-system.ts"
+import { JsonFileStore } from "./json-file-store.ts"
 
 const numberBox = z.object({ n: z.number() })
 

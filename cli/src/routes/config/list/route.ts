@@ -1,7 +1,7 @@
 import { z } from "zod"
-import { factory } from "../../../factory"
-import { bodyValidator } from "../../../lib/body-validator"
-import { helpGuard } from "../../../lib/help-guard"
+import { factory } from "../../../factory.ts"
+import { bodyValidator } from "../../../lib/body-validator.ts"
+import { helpGuard } from "../../../lib/help-guard.ts"
 
 const schema = z.strictObject({})
 

@@ -1,4 +1,4 @@
-import { type MinionFileStat, MinionFileSystem } from "./file-system"
+import { type MinionFileStat, MinionFileSystem } from "./file-system.ts"
 
 type Props = {
   dirs?: string[]

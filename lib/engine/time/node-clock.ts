@@ -1,4 +1,4 @@
-import { MinionClock } from "./clock"
+import { MinionClock } from "./clock.ts"
 
 export class NodeMinionClock extends MinionClock {
   now(): Date {

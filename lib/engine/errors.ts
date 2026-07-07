@@ -1,7 +1,7 @@
 /**
  * Error-as-value helpers. The library never throws across its public surface —
  * fallible operations return `T | Error`, checked with `instanceof Error`.
- * These helpers convert the throwing world (node:fs, Bun, JSON.parse) into
+ * These helpers convert the throwing world (node:fs, node:http, JSON.parse) into
  * that convention at the boundary.
  */
 

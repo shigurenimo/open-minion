@@ -9,8 +9,8 @@ import {
   statSync,
   writeFileSync,
 } from "node:fs"
-import { toError } from "../errors"
-import { type MinionFileStat, MinionFileSystem } from "./file-system"
+import { toError } from "../errors.ts"
+import { type MinionFileStat, MinionFileSystem } from "./file-system.ts"
 
 export class NodeMinionFileSystem extends MinionFileSystem {
   existsSync(path: string): boolean {

@@ -1,16 +1,19 @@
-import { toError } from "../errors"
-import { MinionProcessRunner, type RunOptions } from "./process-runner"
+import { spawn } from "node:child_process"
+import { toError } from "../errors.ts"
+import { MinionProcessRunner, type RunOptions } from "./process-runner.ts"
 
 export class NodeMinionProcessRunner extends MinionProcessRunner {
   async runInherit(command: string[], options: RunOptions = {}): Promise<number | Error> {
     try {
       const [cmd, ...args] = command
-      const proc = Bun.spawn([cmd ?? "", ...args], {
+      const proc = spawn(cmd ?? "", args, {
         cwd: options.cwd,
-        stdout: "inherit",
-        stderr: "inherit",
+        stdio: ["inherit", "inherit", "inherit"],
       })
-      return await proc.exited
+      return await new Promise<number | Error>((resolve) => {
+        proc.once("error", (err) => resolve(toError(err)))
+        proc.once("close", (code) => resolve(code ?? 1))
+      })
     } catch (thrown) {
       return toError(thrown)
     }
@@ -19,13 +22,16 @@ export class NodeMinionProcessRunner extends MinionProcessRunner {
   spawnDetached(command: string[], options: RunOptions = {}): number | Error {
     try {
       const [cmd, ...args] = command
-      const proc = Bun.spawn([cmd ?? "", ...args], {
+      const proc = spawn(cmd ?? "", args, {
         cwd: options.cwd,
-        stdout: "ignore",
-        stderr: "ignore",
-        stdin: "ignore",
+        detached: true,
+        stdio: "ignore",
       })
+      // spawn は非同期にしか失敗を通知しない (ENOENT 等)。unref 済みの孤児プロセスの
+      // error はプロセス全体を落とすので、握って以後の isAlive 判定に任せる。
+      proc.once("error", () => {})
       proc.unref()
+      if (proc.pid === undefined) return new Error(`起動に失敗しました: ${command.join(" ")}`)
       return proc.pid
     } catch (thrown) {
       return toError(thrown)

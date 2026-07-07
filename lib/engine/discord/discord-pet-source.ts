@@ -1,6 +1,6 @@
-import { PetSource } from "../gateway/pet-source"
-import type { SessionInfo } from "../gateway/sessions"
-import type { DiscordGatewayClient } from "./discord-gateway-client"
+import { PetSource } from "../gateway/pet-source.ts"
+import type { SessionInfo } from "../gateway/sessions.ts"
+import type { DiscordGatewayClient } from "./discord-gateway-client.ts"
 
 /** The id namespace for Discord pets: `discord:<userId>` — keeps them from ever colliding with Claude Code session ids. */
 export const DISCORD_PET_ID_PREFIX = "discord:"

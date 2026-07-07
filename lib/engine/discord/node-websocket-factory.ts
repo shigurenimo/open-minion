@@ -1,9 +1,9 @@
-import { toError } from "../errors"
+import { toError } from "../errors.ts"
 import {
   MinionWebSocketConnection,
   MinionWebSocketFactory,
   type MinionWebSocketHandlers,
-} from "./websocket-factory"
+} from "./websocket-factory.ts"
 
 class NodeMinionWebSocketConnection extends MinionWebSocketConnection {
   private readonly socket: WebSocket

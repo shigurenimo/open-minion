@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest"
-import { MemoryMinionFileSystem } from "../fs/memory-file-system"
-import { MemoryMinionProcessRunner } from "../process/memory-process-runner"
-import { resolveMinionPaths } from "./app-paths"
-import { type MinionAppEvent, MinionAppRunner } from "./app-runner"
+import { MemoryMinionFileSystem } from "../fs/memory-file-system.ts"
+import { MemoryMinionProcessRunner } from "../process/memory-process-runner.ts"
+import { resolveMinionPaths } from "./app-paths.ts"
+import { type MinionAppEvent, MinionAppRunner } from "./app-runner.ts"
 
 function setup(files: Record<string, string> = {}) {
   const fs = new MemoryMinionFileSystem({
@@ -15,7 +15,7 @@ function setup(files: Record<string, string> = {}) {
     fs,
     process,
     paths,
-    gatewayCommand: ["bun", "/pkg/gateway.ts"],
+    gatewayCommand: ["node", "/pkg/gateway.js"],
     onEvent: (event) => events.push(event),
   })
   return { fs, process, paths, runner, events }
@@ -32,7 +32,7 @@ describe("MinionAppRunner.start", () => {
     expect(fs.existsSync(paths.pidFile)).toBe(true)
     expect(fs.existsSync(paths.gatewayPidFile)).toBe(true)
     expect(process.calls.some((c) => c.kind === "runInherit")).toBe(true)
-    expect(process.calls.some((c) => c.kind === "spawnDetached" && c.command[0] === "bun")).toBe(
+    expect(process.calls.some((c) => c.kind === "spawnDetached" && c.command[0] === "node")).toBe(
       true,
     )
   })
@@ -57,7 +57,7 @@ describe("MinionAppRunner.start", () => {
       fs,
       process: new MemoryMinionProcessRunner(),
       paths,
-      gatewayCommand: ["bun", "/pkg/gateway.ts"],
+      gatewayCommand: ["node", "/pkg/gateway.js"],
     })
 
     const result = await runner.start()
@@ -84,7 +84,7 @@ describe("MinionAppRunner.start", () => {
       },
     })
     const process = new MemoryMinionProcessRunner()
-    const runner = new MinionAppRunner({ fs, process, paths, gatewayCommand: ["bun", "gw"] })
+    const runner = new MinionAppRunner({ fs, process, paths, gatewayCommand: ["node", "gw"] })
 
     // Prime the recorded build hash by doing a full build once (data.json doesn't exist yet).
     await runner.start()
@@ -115,13 +115,13 @@ describe("MinionAppRunner.start", () => {
     await runner.start() // app pid 1001, gateway pid 1002 (default incrementing stub)
     process.onIsAlive((pid) => pid === 1002) // gateway still alive, app pid considered dead
     const gatewaySpawnsBefore = process.calls.filter(
-      (c) => c.kind === "spawnDetached" && c.command[0] === "bun",
+      (c) => c.kind === "spawnDetached" && c.command[0] === "node",
     ).length
 
     await runner.start()
 
     const gatewaySpawnsAfter = process.calls.filter(
-      (c) => c.kind === "spawnDetached" && c.command[0] === "bun",
+      (c) => c.kind === "spawnDetached" && c.command[0] === "node",
     ).length
     expect(gatewaySpawnsAfter).toBe(gatewaySpawnsBefore)
   })

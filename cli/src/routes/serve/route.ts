@@ -1,7 +1,7 @@
 import { z } from "zod"
-import { factory } from "../../factory"
-import { bodyValidator } from "../../lib/body-validator"
-import { helpGuard } from "../../lib/help-guard"
+import { factory } from "../../factory.ts"
+import { bodyValidator } from "../../lib/body-validator.ts"
+import { helpGuard } from "../../lib/help-guard.ts"
 
 const schema = z.strictObject({
   port: z.string().regex(/^\d+$/, "--port は数値で指定してください").optional(),
@@ -17,12 +17,12 @@ export default factory.createHandlers(helpGuard(help), bodyValidator(schema), as
   const body = c.req.valid("json")
   const port = body.port === undefined ? undefined : Number(body.port)
 
-  const handle = c.env.minion.gatewayServer({ port }).start()
+  const handle = await c.env.minion.gatewayServer({ port }).start()
   if (handle instanceof Error) {
     return c.text(`gateway の起動に失敗しました: ${handle.message}`, 500)
   }
 
-  // Bun.serve と tick タイマーがイベントループを維持するので、応答を返した後も
+  // HTTP サーバーと tick タイマーがイベントループを維持するので、応答を返した後も
   // プロセスは生き続ける (Ctrl+C で終了)。
   return c.text(`gateway をポート ${handle.port} で起動しました (Ctrl+C で停止)`)
 })

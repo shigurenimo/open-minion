@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest"
-import { MemoryMinionFileSystem } from "./engine/fs/memory-file-system"
-import { MemoryMinionProcessRunner } from "./engine/process/memory-process-runner"
-import { MemoryMinionClock } from "./engine/time/memory-clock"
-import { ClaudeSessionsPetSource, PetSource } from "./engine/gateway/pet-source"
-import type { SessionInfo } from "./engine/gateway/sessions"
-import { Minion } from "./minion"
+import { MemoryMinionFileSystem } from "./engine/fs/memory-file-system.ts"
+import { MemoryMinionProcessRunner } from "./engine/process/memory-process-runner.ts"
+import { MemoryMinionClock } from "./engine/time/memory-clock.ts"
+import { ClaudeSessionsPetSource, PetSource } from "./engine/gateway/pet-source.ts"
+import type { SessionInfo } from "./engine/gateway/sessions.ts"
+import { Minion } from "./minion.ts"
 
 function must<T>(value: T | Error): T {
   if (value instanceof Error) throw value

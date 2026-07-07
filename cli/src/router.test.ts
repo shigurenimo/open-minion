@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { toRequest } from "./router"
+import { toRequest } from "./router.ts"
 
 describe("toRequest", () => {
   it("parses segments only", () => {

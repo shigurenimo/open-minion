@@ -1,41 +1,42 @@
+import { existsSync } from "node:fs"
 import { homedir } from "node:os"
-import { join } from "node:path"
+import { dirname, join } from "node:path"
 import { fileURLToPath } from "node:url"
-import type { MinionFileSystem } from "./engine/fs/file-system"
-import { MemoryMinionFileSystem } from "./engine/fs/memory-file-system"
-import { NodeMinionFileSystem } from "./engine/fs/node-file-system"
-import type { MinionProcessRunner } from "./engine/process/process-runner"
-import { MemoryMinionProcessRunner } from "./engine/process/memory-process-runner"
-import { NodeMinionProcessRunner } from "./engine/process/node-process-runner"
-import type { MinionClock } from "./engine/time/clock"
-import { MemoryMinionClock } from "./engine/time/memory-clock"
-import { NodeMinionClock } from "./engine/time/node-clock"
-import type { MinionRandomSource } from "./engine/random/random-source"
-import { MemoryMinionRandomSource } from "./engine/random/memory-random-source"
-import { NodeMinionRandomSource } from "./engine/random/node-random-source"
-import { type MinionPaths, resolveMinionPaths } from "./engine/app/app-paths"
-import { type MinionAppEvent, MinionAppRunner } from "./engine/app/app-runner"
-import { migrateLegacyConfigFile, MinionConfigStore } from "./engine/config/config-store"
-import type { Achievement } from "./engine/collection/achievements"
-import { MinionCollectionStore } from "./engine/collection/collection-store"
-import { MinionCollectionTracker } from "./engine/collection/collection-tracker"
-import type { MinionSpecies } from "./engine/collection/species"
-import { DiscordGatewayClient } from "./engine/discord/discord-gateway-client"
-import { DiscordPetSource } from "./engine/discord/discord-pet-source"
-import { MemoryMinionWebSocketFactory } from "./engine/discord/memory-websocket-factory"
-import { NodeMinionWebSocketFactory } from "./engine/discord/node-websocket-factory"
-import type { MinionWebSocketFactory } from "./engine/discord/websocket-factory"
-import { ClaudeSessionsPetSource, type PetSource } from "./engine/gateway/pet-source"
+import type { MinionFileSystem } from "./engine/fs/file-system.ts"
+import { MemoryMinionFileSystem } from "./engine/fs/memory-file-system.ts"
+import { NodeMinionFileSystem } from "./engine/fs/node-file-system.ts"
+import type { MinionProcessRunner } from "./engine/process/process-runner.ts"
+import { MemoryMinionProcessRunner } from "./engine/process/memory-process-runner.ts"
+import { NodeMinionProcessRunner } from "./engine/process/node-process-runner.ts"
+import type { MinionClock } from "./engine/time/clock.ts"
+import { MemoryMinionClock } from "./engine/time/memory-clock.ts"
+import { NodeMinionClock } from "./engine/time/node-clock.ts"
+import type { MinionRandomSource } from "./engine/random/random-source.ts"
+import { MemoryMinionRandomSource } from "./engine/random/memory-random-source.ts"
+import { NodeMinionRandomSource } from "./engine/random/node-random-source.ts"
+import { type MinionPaths, resolveMinionPaths } from "./engine/app/app-paths.ts"
+import { type MinionAppEvent, MinionAppRunner } from "./engine/app/app-runner.ts"
+import { migrateLegacyConfigFile, MinionConfigStore } from "./engine/config/config-store.ts"
+import type { Achievement } from "./engine/collection/achievements.ts"
+import { MinionCollectionStore } from "./engine/collection/collection-store.ts"
+import { MinionCollectionTracker } from "./engine/collection/collection-tracker.ts"
+import type { MinionSpecies } from "./engine/collection/species.ts"
+import { DiscordGatewayClient } from "./engine/discord/discord-gateway-client.ts"
+import { DiscordPetSource } from "./engine/discord/discord-pet-source.ts"
+import { MemoryMinionWebSocketFactory } from "./engine/discord/memory-websocket-factory.ts"
+import { NodeMinionWebSocketFactory } from "./engine/discord/node-websocket-factory.ts"
+import type { MinionWebSocketFactory } from "./engine/discord/websocket-factory.ts"
+import { ClaudeSessionsPetSource, type PetSource } from "./engine/gateway/pet-source.ts"
 import {
   type GatewaySnapshot,
   type MinionFetch,
   readGatewaySnapshot,
-} from "./engine/gateway/gateway-probe"
-import { MinionGatewayServer } from "./engine/gateway/gateway-server"
-import { resolveGatewayDaemonScript } from "./engine/gateway/resolve-daemon-script"
-import { SessionStatsTracker } from "./engine/stats/session-stats-tracker"
-import { TokenUsageTracker } from "./engine/stats/token-usage-tracker"
-import { MinionStatsCollector } from "./engine/stats/stats-collector"
+} from "./engine/gateway/gateway-probe.ts"
+import { MinionGatewayServer } from "./engine/gateway/gateway-server.ts"
+import { resolveGatewayDaemonScript } from "./engine/gateway/resolve-daemon-script.ts"
+import { SessionStatsTracker } from "./engine/stats/session-stats-tracker.ts"
+import { TokenUsageTracker } from "./engine/stats/token-usage-tracker.ts"
+import { MinionStatsCollector } from "./engine/stats/stats-collector.ts"
 
 const SANDBOX_PACKAGE_ROOT = "/sandbox/pkg"
 const SANDBOX_DATA_DIR = "/sandbox/.minion"
@@ -152,7 +153,8 @@ export class Minion {
       fs,
       process: processRunner,
       paths: this.paths,
-      gatewayCommand: ["bun", resolveGatewayDaemonScript()],
+      // 実行中のランタイム (node / bun) をそのまま使う — 追加ランタイムを要求しない。
+      gatewayCommand: [process.execPath, resolveGatewayDaemonScript()],
       onEvent: props.onEvent,
     })
 
@@ -186,7 +188,7 @@ export class Minion {
    * for tests and ad-hoc experiments. Override individual fields via `props`.
    *
    * NOT covered by `inMemory()`: `gatewayServer().start()` still calls
-   * `Bun.serve` and binds a real port; pass `port: 0` to let the OS pick one.
+   * a real `node:http` server and binds a real port; pass `port: 0` to let the OS pick one.
    */
   static inMemory(props: MinionOptions = {}): Minion {
     // The default sandbox fs stamps mtimes off the sandbox clock, so
@@ -279,6 +281,15 @@ export class Minion {
 }
 
 function defaultPackageRoot(): string {
+  // TS ソースなら lib/.. がルートだが、dist 実行時は dist/lib/.. = dist になってしまう。
+  // package.json が現れるまで遡る (swift/ はパッケージルート直下にある)。
   // URL.pathname はパスに空白や非ASCII文字があるとパーセントエンコードされたまま壊れる
+  let dir = fileURLToPath(new URL(".", import.meta.url))
+  for (let depth = 0; depth < 10; depth++) {
+    if (existsSync(join(dir, "package.json"))) return dir
+    const parent = dirname(dir)
+    if (parent === dir) break
+    dir = parent
+  }
   return fileURLToPath(new URL("..", import.meta.url))
 }

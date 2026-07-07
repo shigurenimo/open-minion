@@ -1,6 +1,6 @@
 import { z } from "zod"
-import type { MinionFileSystem } from "../fs/file-system"
-import { JsonFileStore } from "../fs/json-file-store"
+import type { MinionFileSystem } from "../fs/file-system.ts"
+import { JsonFileStore } from "../fs/json-file-store.ts"
 
 const schema = z.object({
   /** achievement id -> ISO timestamp of when it was unlocked */
