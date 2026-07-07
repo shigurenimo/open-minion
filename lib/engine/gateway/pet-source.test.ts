@@ -101,10 +101,7 @@ describe("DiscordPetSource", () => {
     })
 
     expect(source.read()).toEqual(
-      new Map([
-        ["discord:u1", { running: true, name: "alice", activity: "gaming" }],
-        ["discord:u2", { running: false, name: "bob" }],
-      ]),
+      new Map([["discord:u1", { running: true, name: "alice", activity: "gaming" }]]),
     )
 
     source.stop()

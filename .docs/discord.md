@@ -1,7 +1,7 @@
 # Discord 連携
 
 フレンドの Discord プレゼンスをペットにする機能。オンラインのフレンドは動き回り、
-オフラインなら寝て、ゲームをプレイ中なら座り込んで頭上に 🎮 が出る。
+ゲームをプレイ中なら座り込んで頭上に 🎮 が出る。オフラインのフレンドは表示されない。
 
 コードの正本は `lib/engine/discord/`(取得側)と
 `lib/engine/gateway/pet-source.ts`(gateway への合流点)。
@@ -57,8 +57,8 @@ Discord Gateway WS (PRESENCE_UPDATE)
   → PetBehaviorEngine → WS スナップショット → 各レンダラー (swift/ / electron/)
 ```
 
-- 状態変換: `online / idle / dnd → running`、`offline → sleeping`、
-  activities に type 0 (Playing) があれば `activity: "gaming"`
+- 状態変換: `online / idle / dnd → running`、`offline` はペットとして出さない
+  (`read()` がスキップ)、activities に type 0 (Playing) があれば `activity: "gaming"`
 - 切断中は最後の状態を保持し続ける(フレンドが一斉に消えたりしない)。
   接続エラーは `DiscordGatewayClient.lastError()` に残る
 

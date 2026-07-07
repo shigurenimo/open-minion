@@ -7,8 +7,8 @@ export const DISCORD_PET_ID_PREFIX = "discord:"
 
 /**
  * Adapts a `DiscordGatewayClient`'s presence cache to the `PetSource`
- * contract: online friends read as running pets, offline friends sleep, and a
- * "Playing" activity marks the pet as gaming.
+ * contract: online friends read as running pets, offline friends are omitted
+ * entirely, and a "Playing" activity marks the pet as gaming.
  */
 export class DiscordPetSource extends PetSource {
   private readonly client: DiscordGatewayClient
@@ -21,8 +21,9 @@ export class DiscordPetSource extends PetSource {
   read(): Map<string, SessionInfo> {
     const result = new Map<string, SessionInfo>()
     for (const [userId, presence] of this.client.presences()) {
+      if (!presence.online) continue
       result.set(`${DISCORD_PET_ID_PREFIX}${userId}`, {
-        running: presence.online,
+        running: true,
         name: presence.name,
         ...(presence.gaming ? { activity: "gaming" as const } : {}),
       })
