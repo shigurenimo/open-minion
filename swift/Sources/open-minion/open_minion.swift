@@ -280,6 +280,9 @@ final class Pet {
             window.setFrameOrigin(NSPoint(x: x, y: y))
         }
 
+        // スポーン時の向きはランダム。移動する行動を取るまでこの向きを保つ。
+        facingLeft = Bool.random()
+
         window.orderFrontRegardless()
     }
 

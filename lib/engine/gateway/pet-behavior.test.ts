@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest"
 import { MemoryMinionRandomSource } from "@lib/engine/random/memory-random-source"
-import { IDLE_CLIP, PetBehaviorEngine, pickAction } from "@lib/engine/gateway/pet-behavior"
+import {
+  IDLE_CLIP,
+  PetBehaviorEngine,
+  pickAction,
+  pickSleepingAction,
+} from "@lib/engine/gateway/pet-behavior"
 import type { SessionInfo } from "@lib/engine/gateway/sessions"
 
 describe("pickAction", () => {
@@ -13,6 +18,18 @@ describe("pickAction", () => {
     const action = pickAction(new MemoryMinionRandomSource({ values: [0.99] }))
     expect(action.clipIndex).toBe(12)
     expect(action.durationMs).toBeCloseTo(2990, 5)
+  })
+})
+
+describe("pickSleepingAction", () => {
+  it("picks idle with its minimum duration when random always returns 0", () => {
+    const action = pickSleepingAction(new MemoryMinionRandomSource({ values: [0] }))
+    expect(action).toEqual({ clipIndex: IDLE_CLIP, durationMs: 6000 })
+  })
+
+  it("picks the last sitting pose near a roll of 100", () => {
+    const action = pickSleepingAction(new MemoryMinionRandomSource({ values: [0.99] }))
+    expect(action.clipIndex).toBe(10)
   })
 })
 
@@ -82,6 +99,22 @@ describe("PetBehaviorEngine", () => {
     const elapsed = engine.tick(4000, sessions({ a: { running: true, name: "repo" } }))
     expect(elapsed).toBe(true)
     expect(engine.snapshot()[0]?.clipIndex).toBe(12)
+  })
+
+  it("rotates a sleeping session through calm poses as durations elapse", () => {
+    // tick1: roll 0 → 待機(6000ms)。tick2: roll 0.5 → 座る1。
+    const random = new MemoryMinionRandomSource({ values: [0, 0, 0.5, 0] })
+    const engine = new PetBehaviorEngine({ random })
+    engine.tick(1000, sessions({ a: { running: false, name: "repo" } }))
+    expect(engine.snapshot()[0]?.clipIndex).toBe(IDLE_CLIP)
+
+    const stillPosing = engine.tick(4000, sessions({ a: { running: false, name: "repo" } }))
+    expect(stillPosing).toBe(false)
+
+    const elapsed = engine.tick(7000, sessions({ a: { running: false, name: "repo" } }))
+    expect(elapsed).toBe(true)
+    expect(engine.snapshot()[0]?.clipIndex).toBe(7)
+    expect(engine.snapshot()[0]?.state).toBe("sleeping")
   })
 
   it("is not dirty on a steady-state tick with no changes", () => {

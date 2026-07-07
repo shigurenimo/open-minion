@@ -21,6 +21,20 @@ export const ACTIONS: { durationMs: [number, number]; weight: number }[] = [
   { weight: 2, durationMs: [2000, 3000] }, // 12 食べる2
 ]
 
+// 稼働していないセッション用の「静かな」行動だけの部分集合(clipIndexはACTIONS/Swiftの
+// 並びを指す)。移動・ジャンプ・食事は含めず、待機と座り姿勢をゆっくり切り替える。
+export const SLEEPING_ACTIONS: {
+  clipIndex: number
+  durationMs: [number, number]
+  weight: number
+}[] = [
+  { clipIndex: 0, weight: 40, durationMs: [6000, 12000] }, // 待機
+  { clipIndex: 7, weight: 15, durationMs: [6000, 12000] }, // 座る1
+  { clipIndex: 8, weight: 15, durationMs: [6000, 12000] }, // 座る2
+  { clipIndex: 9, weight: 15, durationMs: [6000, 12000] }, // 座る3
+  { clipIndex: 10, weight: 15, durationMs: [6000, 12000] }, // 座る4
+]
+
 export type PetAction = { clipIndex: number; durationMs: number }
 
 export function pickAction(random: MinionRandomSource): PetAction {
@@ -41,6 +55,26 @@ export function pickAction(random: MinionRandomSource): PetAction {
   const chosenAction = ACTIONS[chosen]
   const [min, max] = chosenAction?.durationMs ?? [0, 0]
   return { clipIndex: chosen, durationMs: min + random.next() * (max - min) }
+}
+
+export function pickSleepingAction(random: MinionRandomSource): PetAction {
+  const roll = random.next() * 100
+  let cumulative = 0
+  let chosen = SLEEPING_ACTIONS[0]
+
+  for (const action of SLEEPING_ACTIONS) {
+    cumulative += action.weight
+    if (roll < cumulative) {
+      chosen = action
+      break
+    }
+  }
+
+  const [min, max] = chosen?.durationMs ?? [0, 0]
+  return {
+    clipIndex: chosen?.clipIndex ?? IDLE_CLIP,
+    durationMs: min + random.next() * (max - min),
+  }
 }
 
 export type PetBehavior = {
@@ -85,9 +119,7 @@ export class PetBehaviorEngine {
       const existing = this.behaviors.get(id)
 
       if (!existing) {
-        const action = info.running
-          ? pickAction(this.random)
-          : { clipIndex: IDLE_CLIP, durationMs: 0 }
+        const action = info.running ? pickAction(this.random) : pickSleepingAction(this.random)
         this.behaviors.set(id, {
           running: info.running,
           name: info.name,
@@ -105,20 +137,16 @@ export class PetBehaviorEngine {
 
       if (existing.running !== info.running) {
         existing.running = info.running
-        if (info.running) {
-          const action = pickAction(this.random)
-          existing.clipIndex = action.clipIndex
-          existing.actionEndsAt = now + action.durationMs
-        } else {
-          // 稼働が止まったら、直前のアクションの途中コマで固まらないよう待機姿勢に戻す。
-          existing.clipIndex = IDLE_CLIP
-        }
-        dirty = true
-      } else if (info.running && now >= existing.actionEndsAt) {
-        const action = pickAction(this.random)
+        // 稼働が止まったときも静かな姿勢を選び直す(走りの途中コマで固まらないように)。
+        const action = info.running ? pickAction(this.random) : pickSleepingAction(this.random)
         existing.clipIndex = action.clipIndex
         existing.actionEndsAt = now + action.durationMs
         dirty = true
+      } else if (now >= existing.actionEndsAt) {
+        const action = info.running ? pickAction(this.random) : pickSleepingAction(this.random)
+        if (action.clipIndex !== existing.clipIndex) dirty = true
+        existing.clipIndex = action.clipIndex
+        existing.actionEndsAt = now + action.durationMs
       }
     }
 
