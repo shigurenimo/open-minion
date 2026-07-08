@@ -1,7 +1,11 @@
-import { type Achievement, DEFAULT_ACHIEVEMENTS } from "./achievements.ts"
-import type { MinionCollectionStore } from "./collection-store.ts"
-import { DEFAULT_MINION_SPECIES, type MinionSpecies, resolveSpecies } from "./species.ts"
-import type { StatsSnapshot } from "../stats/stats-snapshot.ts"
+import { type Achievement, DEFAULT_ACHIEVEMENTS } from "@/lib/engine/collection/achievements.ts"
+import type { MinionCollectionStore } from "@/lib/engine/collection/collection-store.ts"
+import {
+  DEFAULT_MINION_SPECIES,
+  type MinionSpecies,
+  resolveSpecies,
+} from "@/lib/engine/collection/species.ts"
+import type { StatsSnapshot } from "@/lib/engine/stats/stats-snapshot.ts"
 
 export type CollectionEvaluation = {
   /** The one species manifesting right now — the first (= highest-priority) catalog match. */

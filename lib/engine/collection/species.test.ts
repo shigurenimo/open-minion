@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest"
-import { DEFAULT_MINION_SPECIES, resolveSpecies } from "./species.ts"
-import { timeBucketForHour } from "../stats/stats-snapshot.ts"
-import type { StatsSnapshot } from "../stats/stats-snapshot.ts"
+import { DEFAULT_MINION_SPECIES, resolveSpecies } from "@/lib/engine/collection/species.ts"
+import { timeBucketForHour } from "@/lib/engine/stats/stats-snapshot.ts"
+import type { StatsSnapshot } from "@/lib/engine/stats/stats-snapshot.ts"
 
 function stats(overrides: Partial<StatsSnapshot> = {}): StatsSnapshot {
   const hour = overrides.hour ?? 12

@@ -2,8 +2,8 @@ const MS_PER_DAY = 24 * 60 * 60 * 1000
 
 /** Parses a "YYYY-MM-DD" string as a UTC-midnight instant. */
 function parseIsoDate(dateIso: string): number {
-  const [y, m, d] = dateIso.split("-").map(Number)
-  return Date.UTC(y ?? 1970, (m ?? 1) - 1, d ?? 1)
+  const parts = dateIso.split("-").map(Number)
+  return Date.UTC(parts[0] ?? 1970, (parts[1] ?? 1) - 1, parts[2] ?? 1)
 }
 
 /** The `days` calendar dates ending on (and including) `todayIso`, in "YYYY-MM-DD" form, most-recent first. */

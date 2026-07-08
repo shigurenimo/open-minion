@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest"
-import { MemoryMinionFileSystem } from "../fs/memory-file-system.ts"
-import { MemoryMinionClock } from "../time/memory-clock.ts"
-import { TokenUsageTracker } from "./token-usage-tracker.ts"
+import { MemoryMinionFileSystem } from "@/lib/engine/fs/memory-file-system.ts"
+import { MemoryMinionClock } from "@/lib/engine/time/memory-clock.ts"
+import { TokenUsageTracker } from "@/lib/engine/stats/token-usage-tracker.ts"
 
 function must<T>(value: T | Error): T {
   if (value instanceof Error) throw value

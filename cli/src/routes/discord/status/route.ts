@@ -1,9 +1,9 @@
 import { z } from "zod"
-import { DISCORD_PET_ID_PREFIX } from "../../../../../lib/engine/discord/discord-pet-source.ts"
-import type { Minion } from "../../../../../lib/minion.ts"
-import { factory } from "../../../factory.ts"
-import { bodyValidator } from "../../../lib/body-validator.ts"
-import { helpGuard } from "../../../lib/help-guard.ts"
+import { DISCORD_PET_ID_PREFIX } from "@/lib/engine/discord/discord-pet-source.ts"
+import type { Minion } from "@/lib/minion.ts"
+import { factory } from "@/cli/src/factory.ts"
+import { bodyValidator } from "@/cli/src/lib/body-validator.ts"
+import { helpGuard } from "@/cli/src/lib/help-guard.ts"
 
 const schema = z.strictObject({})
 

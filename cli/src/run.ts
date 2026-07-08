@@ -2,12 +2,12 @@ import { existsSync, readFileSync } from "node:fs"
 import { dirname, join } from "node:path"
 import { fileURLToPath } from "node:url"
 import type { Hono } from "hono"
-import { safeJsonParse } from "../../lib/engine/errors.ts"
-import { Minion } from "../../lib/minion.ts"
-import { app as defaultApp } from "./app.ts"
-import type { Env } from "./factory.ts"
-import { postJson } from "./lib/post-json.ts"
-import { toRequest } from "./router.ts"
+import { safeJsonParse } from "@/lib/engine/errors.ts"
+import { Minion } from "@/lib/minion.ts"
+import { app as defaultApp } from "@/cli/src/app.ts"
+import type { Env } from "@/cli/src/factory.ts"
+import { postJson } from "@/cli/src/lib/post-json.ts"
+import { toRequest } from "@/cli/src/router.ts"
 
 export const DEFAULT_HELP = `minion - open-minion CLI
 

@@ -2,7 +2,7 @@ import {
   MinionWebSocketConnection,
   MinionWebSocketFactory,
   type MinionWebSocketHandlers,
-} from "./websocket-factory.ts"
+} from "@/lib/engine/discord/websocket-factory.ts"
 
 /**
  * Test double that lets a test play the server: inspect frames the client

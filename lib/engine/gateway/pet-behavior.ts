@@ -1,5 +1,5 @@
-import type { MinionRandomSource } from "../random/random-source.ts"
-import type { SessionInfo } from "./sessions.ts"
+import type { MinionRandomSource } from "@/lib/engine/random/random-source.ts"
+import type { SessionInfo } from "@/lib/engine/gateway/sessions.ts"
 
 export const IDLE_CLIP = 0
 
@@ -68,8 +68,8 @@ export function pickAction(random: MinionRandomSource): PetAction {
   }
 
   const chosenAction = ACTIONS[chosen]
-  const [min, max] = chosenAction?.durationMs ?? [0, 0]
-  return { clipIndex: chosen, durationMs: min + random.next() * (max - min) }
+  const range = chosenAction?.durationMs ?? [0, 0]
+  return { clipIndex: chosen, durationMs: range[0] + random.next() * (range[1] - range[0]) }
 }
 
 export function pickSleepingAction(random: MinionRandomSource): PetAction {
@@ -96,10 +96,10 @@ function pickFromSubset(
     }
   }
 
-  const [min, max] = chosen?.durationMs ?? [0, 0]
+  const range = chosen?.durationMs ?? [0, 0]
   return {
     clipIndex: chosen?.clipIndex ?? IDLE_CLIP,
-    durationMs: min + random.next() * (max - min),
+    durationMs: range[0] + random.next() * (range[1] - range[0]),
   }
 }
 

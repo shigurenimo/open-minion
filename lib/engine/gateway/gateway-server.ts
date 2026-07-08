@@ -1,12 +1,12 @@
 import { serve } from "@hono/node-server"
 import type { Hono } from "hono"
 import { WebSocketServer } from "ws"
-import { toError } from "../errors.ts"
-import type { MinionClock } from "../time/clock.ts"
-import type { MinionRandomSource } from "../random/random-source.ts"
-import { buildGatewayRoutes } from "./gateway-routes.ts"
-import { PetBehaviorEngine } from "./pet-behavior.ts"
-import { mergePetSources, type PetSource } from "./pet-source.ts"
+import { toError } from "@/lib/engine/errors.ts"
+import type { MinionClock } from "@/lib/engine/time/clock.ts"
+import type { MinionRandomSource } from "@/lib/engine/random/random-source.ts"
+import { buildGatewayRoutes } from "@/lib/engine/gateway/gateway-routes.ts"
+import { PetBehaviorEngine } from "@/lib/engine/gateway/pet-behavior.ts"
+import { mergePetSources, type PetSource } from "@/lib/engine/gateway/pet-source.ts"
 
 export const DEFAULT_GATEWAY_PORT = 4756
 const DEFAULT_TICK_MS = 250

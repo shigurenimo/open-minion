@@ -7,25 +7,25 @@ Desktop pet that reacts to Claude Code sessions and Discord friend presence. Fou
 - `lib/` — the programmable API (`@shigureni/minion`); all business logic lives here
 - `cli/` — thin hono-routed CLI that consumes the `Minion` facade
 
-Runtime is Node (engines >=22). Dev runs the TS sources directly via Node's
-type stripping (23.6+): `node cli/src/index.ts <command>`. `npm run build`
-(tsc + `rewriteRelativeImportExtensions`) emits `dist/`, which is what the
-published bin / exports / npx run — hence every relative import carries an
-explicit `.ts` extension; keep that convention or both Node-direct execution
-and the build break.
+Published runtime is Node (engines >=22) — npx/the installed bin only ever
+need Node. Imports use the `@/*` alias (→ repo root, `tsconfig.json` `paths`)
+with explicit `.ts` extensions, never relative paths. Node's own type
+stripping can't resolve `@/*`, so local dev runs the TS sources directly via
+Bun instead: `bun cli/src/index.ts <command>` (Bun reads `tsconfig.json`
+`paths` natively, no loader needed). `npm run build` (`vp pack`, tsdown under
+the hood) resolves `@/*` into plain relative imports and emits `dist/*.mjs` +
+`.d.mts`, which is what the published bin / exports / npx actually run —
+Node never needs to understand the alias.
 
 ## Commands
 
 ```sh
 npm run check   # fmt + lint + type-check (vite-plus) — run before finishing
                 # (electron/ and dist/ are excluded; electron has its own tsconfig + node_modules)
-npm run test    # vitest
-npm run build   # tsc -> dist/ (what npx/the published bin actually runs)
+npm run test    # vitest (resolves @/* via the resolve.alias in vite.config.ts)
+npm run build   # vp pack -> dist/*.mjs + .d.mts (what npx/the published bin actually runs)
 npm run fmt     # auto-fix formatting — run after editing
 ```
-
-Imports are plain relative paths with explicit `.ts` extensions (no aliases) —
-required for Node-direct execution and rewritten to `.js` at build time.
 
 ## lib/ — the library
 

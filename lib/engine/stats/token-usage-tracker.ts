@@ -1,9 +1,9 @@
 import { join } from "node:path"
 import { z } from "zod"
-import { safeJsonParse } from "../errors.ts"
-import type { MinionFileSystem } from "../fs/file-system.ts"
-import { JsonFileStore } from "../fs/json-file-store.ts"
-import type { MinionClock } from "../time/clock.ts"
+import { safeJsonParse } from "@/lib/engine/errors.ts"
+import type { MinionFileSystem } from "@/lib/engine/fs/file-system.ts"
+import { JsonFileStore } from "@/lib/engine/fs/json-file-store.ts"
+import type { MinionClock } from "@/lib/engine/time/clock.ts"
 
 const scanDataSchema = z.object({
   tokensTotal: z.number().catch(0),
@@ -114,8 +114,8 @@ export class TokenUsageTracker {
     const lines = content.split("\n").filter((line) => line.length > 0)
     const startIndex = known?.linesConsumed ?? 0
 
-    for (let i = startIndex; i < lines.length; i++) {
-      addLineUsage(lines[i] as string, data)
+    for (const line of lines.slice(startIndex)) {
+      addLineUsage(line, data)
     }
 
     data.files[path] = { mtimeMs: stat.mtimeMs, linesConsumed: lines.length }

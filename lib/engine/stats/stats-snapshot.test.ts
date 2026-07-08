@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { timeBucketForHour } from "./stats-snapshot.ts"
+import { timeBucketForHour } from "@/lib/engine/stats/stats-snapshot.ts"
 
 describe("timeBucketForHour", () => {
   it("covers every hour of the day with exactly one bucket", () => {

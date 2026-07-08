@@ -34,17 +34,15 @@ minion
 
 ## Commands
 
-| Command                          | What it does                                 |
-| -------------------------------- | -------------------------------------------- |
-| `minion` / `minion start`        | Start the pet. No-op if already running.     |
-| `minion kill`                    | Stop the pet and its gateway.                |
-| `minion reboot`                  | Restart.                                     |
-| `minion serve`                   | Run the gateway in the foreground (Windows). |
-| `minion status`                  | Is it running?                               |
-| `minion dex`                     | Your achievements and minion collection.     |
-| `minion discord status`          | Discord integration status.                  |
-| `minion config list / get / set` | Tweak settings.                              |
-| `minion dev`                     | Restart with a debug build.                  |
+- `minion` / `minion start` — start the pet. No-op if already running.
+- `minion kill` — stop the pet and its gateway.
+- `minion reboot` — restart.
+- `minion serve` — run the gateway in the foreground (Windows).
+- `minion status` — is it running?
+- `minion dex` — your achievements and minion collection.
+- `minion discord status` — Discord integration status.
+- `minion config list / get / set` — tweak settings.
+- `minion dev` — restart with a debug build.
 
 Add `-h` to any command for details. Config lives in `~/.config/minion/config.json`,
 runtime state in `~/.minion`.
@@ -82,9 +80,9 @@ See [electron/README.md](electron/README.md).
 session activity and token usage (from Claude Code's local transcripts) and
 unlocks two kinds of things:
 
-- **Achievements** — milestones like your first session, a 7-day streak, running
+- Achievements — milestones like your first session, a 7-day streak, running
   5 sessions at once, or burning a million tokens in a day.
-- **Minions** — the five common species come out at different times of day; the
+- Minions — the five common species come out at different times of day; the
   rare ones demand something special: 5+ parallel sessions, a week-long streak,
   hopping across 10 different projects, 10M lifetime tokens, coding at 3am...
 
@@ -171,8 +169,9 @@ See `lib/index.ts` for the full API surface.
 
 ## Development
 
-Node.js 23.6+ runs the TS sources directly (`node cli/src/index.ts status`);
-`npm run build` emits the published `dist/`.
+[Bun](https://bun.sh) runs the TS sources directly with `@/*` aliases resolved
+natively (`bun cli/src/index.ts status`); `npm run build` (Node-only) emits
+the published `dist/`.
 
 ```sh
 npm install

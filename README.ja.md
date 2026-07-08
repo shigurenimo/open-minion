@@ -6,7 +6,7 @@
 ペットとして呼び出すこともできます(オンラインの間だけ現れて動き回り、
 ゲーム中は 🎮 を出して座り込みます。オフラインになると退場します)。
 
-ペットは常に**他のウィンドウの背後(壁紙のすぐ上)**にいます。ブラウザや
+ペットは常に他のウィンドウの背後(壁紙のすぐ上)にいます。ブラウザや
 エディタの上に重なって邪魔をすることはありません。
 
 ## macOS で動かす
@@ -41,22 +41,20 @@ npm install   # 初回のみ
 npm start
 ```
 
-ひよこがデスクトップに現れます。**終了するにはタスクトレイのひよこアイコンを
-右クリック →「終了」**(ペットはクリック透過なので直接は触れません)。
+ひよこがデスクトップに現れます。終了するにはタスクトレイのひよこアイコンを
+右クリック →「終了」してください(ペットはクリック透過なので直接は触れません)。
 
 ## コマンド一覧
 
-| コマンド                         | 説明                                               |
-| -------------------------------- | -------------------------------------------------- |
-| `minion` / `minion reboot`       | 停止して起動し直す(macOS)                          |
-| `minion start`                   | 起動する。すでに起動中なら何もしない(macOS)        |
-| `minion kill`                    | ペットと gateway を停止する                        |
-| `minion serve`                   | gateway をこのターミナルで前面起動する(Windows 用) |
-| `minion status`                  | 起動状況を表示する                                 |
-| `minion discord status`          | Discord 連携の設定状況を表示する                   |
-| `minion dex`                     | 実績とミニオン図鑑を表示する                       |
-| `minion config list / get / set` | 設定の一覧・取得・書き込み                         |
-| `minion dev`                     | デバッグビルドで起動し直す(macOS)                  |
+- `minion` / `minion reboot` — 停止して起動し直す(macOS)
+- `minion start` — 起動する。すでに起動中なら何もしない(macOS)
+- `minion kill` — ペットと gateway を停止する
+- `minion serve` — gateway をこのターミナルで前面起動する(Windows 用)
+- `minion status` — 起動状況を表示する
+- `minion discord status` — Discord 連携の設定状況を表示する
+- `minion dex` — 実績とミニオン図鑑を表示する
+- `minion config list / get / set` — 設定の一覧・取得・書き込み
+- `minion dev` — デバッグビルドで起動し直す(macOS)
 
 どのコマンドも `-h` を付けると詳しい説明が出ます。設定は
 `~/.config/minion/config.json`、実行時状態は `~/.minion` に保存されます。
@@ -75,9 +73,9 @@ npm start
 セルフボットやフレンドリスト API は使いません)。
 
 1. [Discord Developer Portal](https://discord.com/developers/applications) で
-   **New Application** → 左メニューの **Bot** へ
-2. Bot ページで **PRESENCE INTENT** と **SERVER MEMBERS INTENT** を ON にする
-3. **OAuth2 → URL Generator** で scope に `bot` だけを選び(権限は不要)、
+   `New Application` → 左メニューの `Bot` へ
+2. Bot ページで `PRESENCE INTENT` と `SERVER MEMBERS INTENT` を ON にする
+3. `OAuth2 → URL Generator` で scope に `bot` だけを選び(権限は不要)、
    生成された URL から自分とフレンドのいる私設サーバーへ Bot を招待する
 4. 設定を書き込む:
 
@@ -111,8 +109,9 @@ npm start
 
 ## 開発
 
-Node.js 23.6+ なら TS ソースを直接実行できます(`node cli/src/index.ts status`)。
-配布物は `npm run build` が `dist/` に出力します。
+[Bun](https://bun.sh) なら `@/*` エイリアスをネイティブに解決しつつ TS ソースを
+直接実行できます(`bun cli/src/index.ts status`)。配布物はNode専用の
+`npm run build` が `dist/` に出力します。
 
 ```sh
 npm install

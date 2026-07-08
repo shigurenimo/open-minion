@@ -1,7 +1,7 @@
 import { z } from "zod"
-import { toError } from "../errors.ts"
-import { DEFAULT_GATEWAY_PORT } from "./gateway-server.ts"
-import type { PetSnapshotEntry } from "./pet-behavior.ts"
+import { toError } from "@/lib/engine/errors.ts"
+import { DEFAULT_GATEWAY_PORT } from "@/lib/engine/gateway/gateway-server.ts"
+import type { PetSnapshotEntry } from "@/lib/engine/gateway/pet-behavior.ts"
 
 /** The slice of `fetch` the probe needs — the runtime global satisfies it, and a test can hand in a stub. */
 export type MinionFetch = (

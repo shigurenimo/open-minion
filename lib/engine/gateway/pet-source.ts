@@ -1,7 +1,7 @@
-import type { MinionFileSystem } from "../fs/file-system.ts"
-import type { MinionProcessRunner } from "../process/process-runner.ts"
-import type { MinionClock } from "../time/clock.ts"
-import { readActiveSessions, type SessionInfo } from "./sessions.ts"
+import type { MinionFileSystem } from "@/lib/engine/fs/file-system.ts"
+import type { MinionProcessRunner } from "@/lib/engine/process/process-runner.ts"
+import type { MinionClock } from "@/lib/engine/time/clock.ts"
+import { readActiveSessions, type SessionInfo } from "@/lib/engine/gateway/sessions.ts"
 
 /**
  * A source of pets: anything that can answer "who is out there, and are they

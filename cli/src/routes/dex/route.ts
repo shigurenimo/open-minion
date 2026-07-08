@@ -1,8 +1,8 @@
 import { z } from "zod"
-import { factory } from "../../factory.ts"
-import { bodyValidator } from "../../lib/body-validator.ts"
-import { helpGuard } from "../../lib/help-guard.ts"
-import type { MinionRarity } from "../../../../lib/engine/collection/species.ts"
+import { factory } from "@/cli/src/factory.ts"
+import { bodyValidator } from "@/cli/src/lib/body-validator.ts"
+import { helpGuard } from "@/cli/src/lib/help-guard.ts"
+import type { MinionRarity } from "@/lib/engine/collection/species.ts"
 
 const schema = z.strictObject({})
 
@@ -17,7 +17,7 @@ export default factory.createHandlers(helpGuard(help), bodyValidator(schema), as
   if (stats instanceof Error) return c.text(stats.message, 500)
   const evaluation = minion.collection.evaluate(stats)
   if (evaluation instanceof Error) return c.text(evaluation.message, 500)
-  const { achievements, species } = minion.collection.dex()
+  const dex = minion.collection.dex()
 
   const lines: string[] = []
 
@@ -38,19 +38,19 @@ export default factory.createHandlers(helpGuard(help), bodyValidator(schema), as
     }
   }
 
-  const unlockedCount = achievements.filter((a) => a.unlocked).length
+  const unlockedCount = dex.achievements.filter((a) => a.unlocked).length
   lines.push("")
-  lines.push(`== 実績 (${unlockedCount}/${achievements.length}) ==`)
-  for (const a of achievements) {
+  lines.push(`== 実績 (${unlockedCount}/${dex.achievements.length}) ==`)
+  for (const a of dex.achievements) {
     const mark = a.unlocked ? "[x]" : "[ ]"
     const detail = a.unlocked ? a.description : "???"
     lines.push(`${mark} ${a.name} — ${detail}`)
   }
 
-  const discoveredCount = species.filter((s) => s.discovered).length
+  const discoveredCount = dex.species.filter((s) => s.discovered).length
   lines.push("")
-  lines.push(`== ミニオン図鑑 (${discoveredCount}/${species.length}) ==`)
-  for (const s of species) {
+  lines.push(`== ミニオン図鑑 (${discoveredCount}/${dex.species.length}) ==`)
+  for (const s of dex.species) {
     const mark = s.discovered ? "[x]" : "[ ]"
     const label = s.discovered
       ? `${s.name} (${rarityLabel(s.rarity)}) — ${s.description}`

@@ -1,11 +1,12 @@
 import { spawn } from "node:child_process"
-import { toError } from "../errors.ts"
-import { MinionProcessRunner, type RunOptions } from "./process-runner.ts"
+import { toError } from "@/lib/engine/errors.ts"
+import { MinionProcessRunner, type RunOptions } from "@/lib/engine/process/process-runner.ts"
 
 export class NodeMinionProcessRunner extends MinionProcessRunner {
   async runInherit(command: string[], options: RunOptions = {}): Promise<number | Error> {
     try {
-      const [cmd, ...args] = command
+      const cmd = command[0]
+      const args = command.slice(1)
       const proc = spawn(cmd ?? "", args, {
         cwd: options.cwd,
         stdio: ["inherit", "inherit", "inherit"],
@@ -21,7 +22,8 @@ export class NodeMinionProcessRunner extends MinionProcessRunner {
 
   spawnDetached(command: string[], options: RunOptions = {}): number | Error {
     try {
-      const [cmd, ...args] = command
+      const cmd = command[0]
+      const args = command.slice(1)
       const proc = spawn(cmd ?? "", args, {
         cwd: options.cwd,
         detached: true,

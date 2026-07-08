@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { isNextDay, recentDates, sumRecentDays } from "./date-window.ts"
+import { isNextDay, recentDates, sumRecentDays } from "@/lib/engine/stats/date-window.ts"
 
 describe("recentDates", () => {
   it("returns the requested number of dates, most-recent first", () => {

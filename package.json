@@ -11,7 +11,7 @@
   "license": "MIT",
   "author": "shigurenimo",
   "bin": {
-    "minion": "dist/cli/src/index.js"
+    "minion": "dist/cli/src/index.mjs"
   },
   "files": [
     "dist",
@@ -20,44 +20,44 @@
   ],
   "type": "module",
   "sideEffects": false,
-  "main": "./dist/lib/index.js",
-  "types": "./dist/lib/index.d.ts",
+  "main": "./dist/lib/index.mjs",
+  "types": "./dist/lib/index.d.mts",
   "exports": {
     ".": {
-      "types": "./dist/lib/index.d.ts",
-      "default": "./dist/lib/index.js"
+      "types": "./dist/lib/index.d.mts",
+      "default": "./dist/lib/index.mjs"
     },
     "./app": {
-      "types": "./dist/lib/app.d.ts",
-      "default": "./dist/lib/app.js"
+      "types": "./dist/lib/app.d.mts",
+      "default": "./dist/lib/app.mjs"
     },
     "./boundaries": {
-      "types": "./dist/lib/boundaries.d.ts",
-      "default": "./dist/lib/boundaries.js"
+      "types": "./dist/lib/boundaries.d.mts",
+      "default": "./dist/lib/boundaries.mjs"
     },
     "./cli": {
-      "types": "./dist/cli/src/cli.d.ts",
-      "default": "./dist/cli/src/cli.js"
+      "types": "./dist/cli/src/cli.d.mts",
+      "default": "./dist/cli/src/cli.mjs"
     },
     "./collection": {
-      "types": "./dist/lib/collection.d.ts",
-      "default": "./dist/lib/collection.js"
+      "types": "./dist/lib/collection.d.mts",
+      "default": "./dist/lib/collection.mjs"
     },
     "./config": {
-      "types": "./dist/lib/config.d.ts",
-      "default": "./dist/lib/config.js"
+      "types": "./dist/lib/config.d.mts",
+      "default": "./dist/lib/config.mjs"
     },
     "./discord": {
-      "types": "./dist/lib/discord.d.ts",
-      "default": "./dist/lib/discord.js"
+      "types": "./dist/lib/discord.d.mts",
+      "default": "./dist/lib/discord.mjs"
     },
     "./gateway": {
-      "types": "./dist/lib/gateway.d.ts",
-      "default": "./dist/lib/gateway.js"
+      "types": "./dist/lib/gateway.d.mts",
+      "default": "./dist/lib/gateway.mjs"
     },
     "./stats": {
-      "types": "./dist/lib/stats.d.ts",
-      "default": "./dist/lib/stats.js"
+      "types": "./dist/lib/stats.d.mts",
+      "default": "./dist/lib/stats.mjs"
     },
     "./package.json": "./package.json"
   },
@@ -65,7 +65,7 @@
     "access": "public"
   },
   "scripts": {
-    "build": "node -e \"fs.rmSync('dist',{recursive:true,force:true})\" && tsc -p tsconfig.build.json",
+    "build": "vp pack",
     "prepack": "npm run build",
     "check": "vp check",
     "fmt": "vp fmt",
@@ -85,6 +85,13 @@
     "@voidzero-dev/vite-plus-core": "^0.2.2",
     "typescript": "^6.0.3",
     "vite-plus": "^0.2.2"
+  },
+  "devEngines": {
+    "packageManager": {
+      "name": "npm",
+      "version": "11.18.0",
+      "onFail": "download"
+    }
   },
   "engines": {
     "node": ">=22"

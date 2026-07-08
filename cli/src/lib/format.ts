@@ -2,21 +2,15 @@ import type {
   MinionAppStatus,
   MinionKillResult,
   MinionStartResult,
-} from "../../../lib/engine/app/app-runner.ts"
+} from "@/lib/engine/app/app-runner.ts"
 
 // ライブラリは構造化された結果を返す。日本語の表示文字列への整形はCLIの責務。
 
 export function formatStartResult(result: MinionStartResult): string {
-  switch (result.kind) {
-    case "started":
-      return `起動した (pid ${result.pid})`
-    case "already-running":
-      return `すでに起動中 (pid ${result.pid})`
-    case "build-failed":
-      return "ビルド失敗"
-    case "lock-conflict":
-      return "他の起動処理と競合したため中止"
-  }
+  if (result.kind === "started") return `起動した (pid ${result.pid})`
+  if (result.kind === "already-running") return `すでに起動中 (pid ${result.pid})`
+  if (result.kind === "build-failed") return "ビルド失敗"
+  return "他の起動処理と競合したため中止"
 }
 
 export function isStartError(result: MinionStartResult): boolean {

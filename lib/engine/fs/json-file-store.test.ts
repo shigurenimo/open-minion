@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest"
 import { z } from "zod"
-import { MemoryMinionFileSystem } from "./memory-file-system.ts"
-import { JsonFileStore } from "./json-file-store.ts"
+import { MemoryMinionFileSystem } from "@/lib/engine/fs/memory-file-system.ts"
+import { JsonFileStore } from "@/lib/engine/fs/json-file-store.ts"
 
 const numberBox = z.object({ n: z.number() })
 
@@ -65,11 +65,12 @@ describe("JsonFileStore", () => {
   })
 
   it("never lets callers mutate the shared default value", () => {
+    const emptyList: number[] = []
     const store = new JsonFileStore({
       fs: new MemoryMinionFileSystem(),
       path: "/a.json",
       schema: z.object({ list: z.array(z.number()) }),
-      defaultValue: { list: [] as number[] },
+      defaultValue: { list: emptyList },
     })
     const first = store.read()
     first.list.push(1)

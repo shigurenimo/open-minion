@@ -1,4 +1,4 @@
-import { MinionRandomSource } from "./random-source.ts"
+import { MinionRandomSource } from "@/lib/engine/random/random-source.ts"
 
 type Props = {
   /** Values replayed in order, then repeated from the start once exhausted. Defaults to always `0`. */

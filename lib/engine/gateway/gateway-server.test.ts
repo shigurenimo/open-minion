@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest"
-import { MemoryMinionClock } from "../time/memory-clock.ts"
-import { MemoryMinionRandomSource } from "../random/memory-random-source.ts"
-import { PetSource } from "./pet-source.ts"
-import type { SessionInfo } from "./sessions.ts"
-import { MinionGatewayServer } from "./gateway-server.ts"
+import { MemoryMinionClock } from "@/lib/engine/time/memory-clock.ts"
+import { MemoryMinionRandomSource } from "@/lib/engine/random/memory-random-source.ts"
+import { PetSource } from "@/lib/engine/gateway/pet-source.ts"
+import type { SessionInfo } from "@/lib/engine/gateway/sessions.ts"
+import { MinionGatewayServer } from "@/lib/engine/gateway/gateway-server.ts"
 
 class OnePetSource extends PetSource {
   read(): Map<string, SessionInfo> {

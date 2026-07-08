@@ -1,9 +1,9 @@
 import { z } from "zod"
-import { safeJsonParse } from "../errors.ts"
-import type { MinionFileSystem } from "../fs/file-system.ts"
-import type { MinionProcessRunner } from "../process/process-runner.ts"
-import type { MinionPaths } from "./app-paths.ts"
-import { computeSourceHash } from "./source-hash.ts"
+import { safeJsonParse } from "@/lib/engine/errors.ts"
+import type { MinionFileSystem } from "@/lib/engine/fs/file-system.ts"
+import type { MinionProcessRunner } from "@/lib/engine/process/process-runner.ts"
+import type { MinionPaths } from "@/lib/engine/app/app-paths.ts"
+import { computeSourceHash } from "@/lib/engine/app/source-hash.ts"
 
 export type MinionBuildKind = "debug" | "release"
 
@@ -38,7 +38,7 @@ type Props = {
   fs: MinionFileSystem
   process: MinionProcessRunner
   paths: MinionPaths
-  /** Command used to launch the gateway daemon, e.g. `[process.execPath, "/path/to/gateway-daemon.js"]`. */
+  /** Command used to launch the gateway daemon, e.g. `[process.execPath, "/path/to/gateway-daemon.mjs"]`. */
   gatewayCommand: string[]
   /** Progress events (build started, ...). Defaults to a no-op — the library never writes to stdout itself. */
   onEvent?: (event: MinionAppEvent) => void

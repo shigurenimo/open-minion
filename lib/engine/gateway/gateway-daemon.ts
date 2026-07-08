@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { Minion } from "../../minion.ts"
+import { Minion } from "@/lib/minion.ts"
 
 const minion = new Minion()
 const port = Number(process.env.MINION_GATEWAY_PORT) || undefined

@@ -6,25 +6,25 @@
 //   import { MemoryMinionFileSystem } from "@shigureni/minion/boundaries"
 
 // Error-as-value helpers — fallible operations return `T | Error`, never throw
-export * from "./engine/errors.ts"
+export * from "@/lib/engine/errors.ts"
 
-export * from "./engine/fs/file-system.ts"
-export * from "./engine/fs/node-file-system.ts"
-export * from "./engine/fs/memory-file-system.ts"
-export * from "./engine/fs/json-file-store.ts"
+export * from "@/lib/engine/fs/file-system.ts"
+export * from "@/lib/engine/fs/node-file-system.ts"
+export * from "@/lib/engine/fs/memory-file-system.ts"
+export * from "@/lib/engine/fs/json-file-store.ts"
 
-export * from "./engine/process/process-runner.ts"
-export * from "./engine/process/node-process-runner.ts"
-export * from "./engine/process/memory-process-runner.ts"
+export * from "@/lib/engine/process/process-runner.ts"
+export * from "@/lib/engine/process/node-process-runner.ts"
+export * from "@/lib/engine/process/memory-process-runner.ts"
 
-export * from "./engine/time/clock.ts"
-export * from "./engine/time/node-clock.ts"
-export * from "./engine/time/memory-clock.ts"
+export * from "@/lib/engine/time/clock.ts"
+export * from "@/lib/engine/time/node-clock.ts"
+export * from "@/lib/engine/time/memory-clock.ts"
 
-export * from "./engine/random/random-source.ts"
-export * from "./engine/random/node-random-source.ts"
-export * from "./engine/random/memory-random-source.ts"
+export * from "@/lib/engine/random/random-source.ts"
+export * from "@/lib/engine/random/node-random-source.ts"
+export * from "@/lib/engine/random/memory-random-source.ts"
 
-export * from "./engine/discord/websocket-factory.ts"
-export * from "./engine/discord/node-websocket-factory.ts"
-export * from "./engine/discord/memory-websocket-factory.ts"
+export * from "@/lib/engine/discord/websocket-factory.ts"
+export * from "@/lib/engine/discord/node-websocket-factory.ts"
+export * from "@/lib/engine/discord/memory-websocket-factory.ts"

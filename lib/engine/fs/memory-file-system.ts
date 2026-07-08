@@ -1,4 +1,4 @@
-import { type MinionFileStat, MinionFileSystem } from "./file-system.ts"
+import { type MinionFileStat, MinionFileSystem } from "@/lib/engine/fs/file-system.ts"
 
 type Props = {
   dirs?: string[]
@@ -61,7 +61,7 @@ export class MemoryMinionFileSystem extends MinionFileSystem {
     for (const file of this.files.keys()) {
       if (!file.startsWith(prefix)) continue
       const rest = file.slice(prefix.length)
-      const [first] = rest.split("/")
+      const first = rest.split("/")[0]
       if (first) names.add(first)
     }
 

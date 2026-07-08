@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest"
-import { MemoryMinionRandomSource } from "../random/memory-random-source.ts"
-import { PetBehaviorEngine } from "./pet-behavior.ts"
-import { buildGatewayRoutes } from "./gateway-routes.ts"
+import { MemoryMinionRandomSource } from "@/lib/engine/random/memory-random-source.ts"
+import { PetBehaviorEngine } from "@/lib/engine/gateway/pet-behavior.ts"
+import { buildGatewayRoutes } from "@/lib/engine/gateway/gateway-routes.ts"
 
 describe("buildGatewayRoutes", () => {
   it("returns an empty session list from a fresh engine", async () => {

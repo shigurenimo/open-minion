@@ -30,12 +30,12 @@ export {
   DEFAULT_COMMANDS,
   type CreateMinionAppOptions,
   type MinionCliCommand,
-} from "./app.ts"
-export { factory, type Env } from "./factory.ts"
-export { bodyValidator } from "./lib/body-validator.ts"
-export { helpGuard } from "./lib/help-guard.ts"
-export { postJson } from "./lib/post-json.ts"
-export { onError } from "./on-error.ts"
-export { toRequest } from "./router.ts"
-export { createNotFound, DEFAULT_USAGE } from "./routes/not-found.ts"
-export { DEFAULT_HELP, runMinionCli, type RunMinionCliOptions } from "./run.ts"
+} from "@/cli/src/app.ts"
+export { factory, type Env } from "@/cli/src/factory.ts"
+export { bodyValidator } from "@/cli/src/lib/body-validator.ts"
+export { helpGuard } from "@/cli/src/lib/help-guard.ts"
+export { postJson } from "@/cli/src/lib/post-json.ts"
+export { onError } from "@/cli/src/on-error.ts"
+export { toRequest } from "@/cli/src/router.ts"
+export { createNotFound, DEFAULT_USAGE } from "@/cli/src/routes/not-found.ts"
+export { DEFAULT_HELP, runMinionCli, type RunMinionCliOptions } from "@/cli/src/run.ts"

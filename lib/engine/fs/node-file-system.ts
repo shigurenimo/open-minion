@@ -9,8 +9,8 @@ import {
   statSync,
   writeFileSync,
 } from "node:fs"
-import { toError } from "../errors.ts"
-import { type MinionFileStat, MinionFileSystem } from "./file-system.ts"
+import { toError } from "@/lib/engine/errors.ts"
+import { type MinionFileStat, MinionFileSystem } from "@/lib/engine/fs/file-system.ts"
 
 export class NodeMinionFileSystem extends MinionFileSystem {
   existsSync(path: string): boolean {
@@ -62,7 +62,7 @@ export class NodeMinionFileSystem extends MinionFileSystem {
 
   readdirRecursiveSync(path: string): string[] | Error {
     try {
-      return readdirSync(path, { recursive: true }) as string[]
+      return readdirSync(path, { recursive: true, encoding: "utf8" })
     } catch (thrown) {
       return toError(thrown)
     }
